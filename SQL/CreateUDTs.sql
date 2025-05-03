@@ -1,0 +1,15 @@
+CREATE PROCEDURE process.CreateUDTs
+AS
+BEGIN
+    CREATE TYPE LongString FROM NVARCHAR(50);
+    CREATE TYPE ShortString FROM NVARCHAR(20);
+    CREATE TYPE CurrencyCode FROM CHAR(3);
+    CREATE TYPE ISOCountryCode FROM CHAR(2);
+    CREATE TYPE YesNoBit FROM BIT;
+    CREATE TYPE StandardDate FROM DATE;
+    CREATE TYPE MoneyAmount FROM DECIMAL(18,4);
+    CREATE TYPE LargeDescription FROM NVARCHAR(255);
+END;
+GO
+
+EXEC process.CreateUDTs;
