@@ -1,4 +1,5 @@
-﻿Magic Motors,United Kingdom,1,0,Ferrari,Testarossa,NULL,NULL,NULL,Red,00:00.0,65000,2700,52000,2175,1500,750
+﻿CustomerName,CountryName,IsReseller,IsCreditRisk,MakeName,ModelName,ModelVariant,YearFirstProduced,YearLastProduced,Color,SaleDate,SalePrice,LineItemDiscount,Cost,RepairsCost,PartsCost,TransportInCost
+Magic Motors,United Kingdom,1,0,Ferrari,Testarossa,NULL,NULL,NULL,Red,00:00.0,65000,2700,52000,2175,1500,750
 Snazzy Roadsters,United Kingdom,1,1,Ferrari,355,NULL,NULL,NULL,Blue,00:00.0,220000,60000,176000,5500,2200,1950
 Birmingham Executive Prestige Vehicles,United Kingdom,1,0,Porsche,911,NULL,NULL,NULL,British Racing Green,00:00.0,19500,NULL,15600,660,0,150
 WunderKar,Germany,1,0,Porsche,924,NULL,NULL,NULL,British Racing Green,00:00.0,11500,NULL,9200,500,750,150
