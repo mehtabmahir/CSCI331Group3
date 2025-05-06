@@ -2,7 +2,6 @@
 
 **Prepared by:** Mehtab Mahir
 **Environment:** SQL Server (Docker on WSL2), SSMS
-**Work Completed:** Initial database and setup scripts created
 
 ---
 
@@ -10,91 +9,102 @@
 
 ### `CreateDB.sql`
 
-Creates the original working database:
+Created the original working database using:
 
 ```sql
 CREATE DATABASE PrestigeCars;
 GO
 ```
 
-Used to load the instructor-provided `PrestigeCarsDatabaseScript.sql` file containing raw data and denormalized schema.
+I then loaded the instructor-provided `PrestigeCarsDatabaseScript.sql`, which generated all original tables including `Data.Customer`, `Data.Sales`, `Data.Stock`, `Data.Model`, and others.
 
 ---
 
-### `CreateNormDB.sql`
+## Flattening Process
 
-Creates the final working database for the normalized version:
+To prepare for normalization, I flattened the core sales data from the original schema into a single staging table.
 
-```sql
-CREATE DATABASE PrestigeCarsNorm;
-GO
+Using SSMS, I browsed the `PrestigeCars` database in Object Explorer and expanded the `Tables` node under the `Data` schema. To gather all column names and inspect structure, I right-clicked on the `Tables` folder and selected **"Script All Tables as → CREATE To → New Query Editor Window"**. This generated a full SQL script of every table's definition, which helped me verify field names and data types.
 
-USE PrestigeCarsNorm;
-GO
+Additionally, I previewed each table's data with `SELECT TOP * FROM [Data].[TableName]` queries to understand relationships and join keys like `CustomerID`, `ModelID`, and `StockID`.
 
-CREATE SCHEMA process;
-GO
-```
-
----
-
-### `CreateSchemas.sql`
-
-Stored procedure to create the schemas needed for organizing the final database:
+Once confident in the structure, I created the flattened output using the following script:
 
 ```sql
-CREATE PROCEDURE process.CreateSchemas
-AS
-BEGIN
-    EXEC('CREATE SCHEMA data');
-    EXEC('CREATE SCHEMA reference');
-    EXEC('CREATE SCHEMA output');
+USE [PrestigeCars];
+GO
+
+IF NOT EXISTS (SELECT * FROM sys.schemas WHERE name = 'staging')
     EXEC('CREATE SCHEMA staging');
-END;
+GO
+
+IF OBJECT_ID('staging.AllData', 'U') IS NOT NULL
+    DROP TABLE staging.AllData;
+GO
+
+CREATE TABLE staging.AllData (
+    CustomerName NVARCHAR(150),
+    CountryName NVARCHAR(150),
+    IsReseller BIT,
+    IsCreditRisk BIT,
+    MakeName NVARCHAR(100),
+    ModelName NVARCHAR(150),
+    ModelVariant NVARCHAR(150),
+    YearFirstProduced CHAR(4),
+    YearLastProduced CHAR(4),
+    Color NVARCHAR(50),
+    SaleDate DATETIME,
+    SalePrice NUMERIC(18,2),
+    LineItemDiscount NUMERIC(18,2),
+    Cost MONEY,
+    RepairsCost MONEY,
+    PartsCost MONEY,
+    TransportInCost MONEY
+);
+GO
+
+INSERT INTO staging.AllData (
+    CustomerName, CountryName, IsReseller, IsCreditRisk,
+    MakeName, ModelName, ModelVariant, YearFirstProduced, YearLastProduced,
+    Color, SaleDate, SalePrice, LineItemDiscount,
+    Cost, RepairsCost, PartsCost, TransportInCost
+)
+SELECT
+    c.CustomerName,
+    co.CountryName,
+    c.IsReseller,
+    c.IsCreditRisk,
+    mk.MakeName,
+    mo.ModelName,
+    mo.ModelVariant,
+    mo.YearFirstProduced,
+    mo.YearLastProduced,
+    st.Color,
+    s.SaleDate,
+    sd.SalePrice,
+    sd.LineItemDiscount,
+    st.Cost,
+    st.RepairsCost,
+    st.PartsCost,
+    st.TransportInCost
+FROM Data.Sales s
+JOIN Data.Customer c ON s.CustomerID = c.CustomerID
+JOIN Data.SalesDetails sd ON s.SalesID = sd.SalesID
+JOIN Data.Stock st ON sd.StockID = st.StockCode
+JOIN Data.Model mo ON st.ModelID = mo.ModelID
+JOIN Data.Make mk ON mo.MakeID = mk.MakeID
+LEFT JOIN Data.Country co ON c.Country = co.CountryISO2;
 GO
 ```
 
-Executed using:
-
-```sql
-EXEC process.CreateSchemas;
-```
-
----
-
-### `CreateUDTs.sql`
-
-Stored procedure to define all user-defined data types:
-
-```sql
-CREATE PROCEDURE process.CreateUDTs
-AS
-BEGIN
-    CREATE TYPE LongString FROM NVARCHAR(50);
-    CREATE TYPE ShortString FROM NVARCHAR(20);
-    CREATE TYPE CurrencyCode FROM CHAR(3);
-    CREATE TYPE ISOCountryCode FROM CHAR(2);
-    CREATE TYPE YesNoBit FROM BIT;
-    CREATE TYPE StandardDate FROM DATE;
-    CREATE TYPE MoneyAmount FROM DECIMAL(18,4);
-    CREATE TYPE LargeDescription FROM NVARCHAR(255);
-END;
-GO
-```
-
-Executed using:
-
-```sql
-EXEC process.CreateUDTs;
-```
+The table `staging.AllData` now contains all relevant attributes in one location and is ready for normalization.
 
 ---
 
 ## Summary
 
-* `PrestigeCars` database created and populated with initial data
-* `PrestigeCarsNorm` database created as the target for normalization
-* All required schemas scripted and generated
-* UDTs defined to standardize column types
-
-All procedures executed successfully. Ready to begin defining tables in the `data` and `reference` schemas.
+* `PrestigeCars` database created and populated
+* Used SSMS scripting to extract the full schema using "Script All Tables as → CREATE"
+* Inspected data using `SELECT TOP *` to confirm fields and keys
+* Flattened output written to `staging.AllData`
+* Output reviewed in SSMS for completeness
