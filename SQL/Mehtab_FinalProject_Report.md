@@ -24,9 +24,7 @@ I then loaded the instructor-provided `PrestigeCarsDatabaseScript.sql`, which ge
 
 To prepare for normalization, I flattened the core sales data from the original schema into a single staging table.
 
-Using SSMS, I browsed the `PrestigeCars` database in Object Explorer and expanded the `Tables` node under the `Data` schema. To gather all column names and inspect structure, I right-clicked on the `Tables` folder and selected **"Script All Tables as → CREATE To → New Query Editor Window"**. This generated a full SQL script of every table's definition, which helped me verify field names and data types.
-
-Additionally, I previewed each table's data with `SELECT TOP * FROM [Data].[TableName]` queries to understand relationships and join keys like `CustomerID`, `ModelID`, and `StockID`.
+Using SSMS, I browsed the `PrestigeCars` database in Object Explorer and expanded the `Tables` node under the `Data` schema. To gather all column names and inspect structure, I right-clicked on the `Tables` folder and selected **"Script All Tables as → CREATE To → New Query Editor Window"**. This generated a full SQL script of every table's definition, which I used to verify field names and data types.
 
 Once confident in the structure, I created the flattened output using the following script:
 
@@ -105,6 +103,5 @@ The table `staging.AllData` now contains all relevant attributes in one location
 
 * `PrestigeCars` database created and populated
 * Used SSMS scripting to extract the full schema using "Script All Tables as → CREATE"
-* Inspected data using `SELECT TOP *` to confirm fields and keys
 * Flattened output written to `staging.AllData`
 * Output reviewed in SSMS for completeness
