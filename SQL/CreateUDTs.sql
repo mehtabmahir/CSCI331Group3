@@ -80,6 +80,8 @@ IF NOT EXISTS (SELECT 1 FROM sys.types WHERE name = 'UDT_TotalSalePrice')
     CREATE TYPE dbo.UDT_TotalSalePrice FROM NUMERIC(18,2);
 
 -- SALES DETAILS
+IF NOT EXISTS (SELECT 1 FROM sys.types WHERE name = 'UDT_SalesDetailsID')
+    CREATE TYPE dbo.UDT_SalesDetailsID FROM INT;
 IF NOT EXISTS (SELECT 1 FROM sys.types WHERE name = 'UDT_LineItemNumber')
     CREATE TYPE dbo.UDT_LineItemNumber FROM TINYINT;
 IF NOT EXISTS (SELECT 1 FROM sys.types WHERE name = 'UDT_SalePrice')
