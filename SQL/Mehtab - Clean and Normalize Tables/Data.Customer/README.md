@@ -1,13 +1,17 @@
+## Steps for Data.Customer Normalization, UDTs, and Constraints
+
+*Author: Mehtab Mahir*
+
+---
+
 ### Step 1 — FindDuplicates.sql
 
-**Goal:** surface any exact duplicates before touching data.
+**Goal:** Surface any exact duplicates before touching data.
 
 ```sql
-/* FindDuplicates.sql */
 /* Author: Mehtab Mahir */
 USE PrestigeCars;
 GO
-
 WITH RowHash AS (
     SELECT CustomerID,
            HASHBYTES('SHA2_256',
@@ -37,10 +41,9 @@ HAVING COUNT(*) > 1;
 
 ### Step 2 — Normalize.sql
 
-**Goal:** trim, upper-case, de-null legacy data.
+**Goal:** Trim, upper-case, de-null legacy data.
 
 ```sql
-/* Normalize.sql */
 /* Author: Mehtab Mahir */
 USE PrestigeCars;
 GO
@@ -59,44 +62,51 @@ GO
 
 ---
 
-### Step 3 — CheckUDTs.sql
+### Step 3 — AlterColumnsToUDTs.sql
 
-**Goal:** create the alias types you need (idempotent).
+**Goal:** Convert all columns to use their UDT types.
+*Note: If you are running on a fresh/original backup (with no custom constraints yet added), you do NOT need to drop constraints before altering column types. If constraints already exist, drop/re-add as shown earlier.*
 
 ```sql
-/* CheckUDTs.sql */
+/* AlterColumnsToUDTs.sql */
 /* Author: Mehtab Mahir */
 USE PrestigeCars;
 GO
-IF NOT EXISTS (SELECT 1 FROM sys.types WHERE name='UDT_CustomerID')
-    CREATE TYPE dbo.UDT_CustomerID      FROM NVARCHAR(5)   NOT NULL;
-IF NOT EXISTS (SELECT 1 FROM sys.types WHERE name='UDT_CustomerName')
-    CREATE TYPE dbo.UDT_CustomerName    FROM NVARCHAR(150) NOT NULL;
-IF NOT EXISTS (SELECT 1 FROM sys.types WHERE name='UDT_Address')
-    CREATE TYPE dbo.UDT_Address         FROM NVARCHAR(50)  NULL;
-IF NOT EXISTS (SELECT 1 FROM sys.types WHERE name='UDT_IsReseller')
-    CREATE TYPE dbo.UDT_IsReseller      FROM BIT           NOT NULL;
-IF NOT EXISTS (SELECT 1 FROM sys.types WHERE name='UDT_IsCreditRisk')
-    CREATE TYPE dbo.UDT_IsCreditRisk    FROM BIT           NOT NULL;
-IF NOT EXISTS (SELECT 1 FROM sys.types WHERE name='UDT_CountryISO2')
-    CREATE TYPE dbo.UDT_CountryISO2     FROM NCHAR(10)     NULL;  -- keep 10 or change to CHAR(2)
+
+ALTER TABLE [PrestigeCars].[Data].[Customer]
+    ALTER COLUMN CustomerID    dbo.UDT_CustomerID     NOT NULL;
+ALTER TABLE [PrestigeCars].[Data].[Customer]
+    ALTER COLUMN CustomerName  dbo.UDT_CustomerName   NOT NULL;
+ALTER TABLE [PrestigeCars].[Data].[Customer]
+    ALTER COLUMN Address1      dbo.UDT_Address        NOT NULL;
+ALTER TABLE [PrestigeCars].[Data].[Customer]
+    ALTER COLUMN Address2      dbo.UDT_Address        NULL;
+ALTER TABLE [PrestigeCars].[Data].[Customer]
+    ALTER COLUMN Town          dbo.UDT_Address        NOT NULL;
+ALTER TABLE [PrestigeCars].[Data].[Customer]
+    ALTER COLUMN PostCode      dbo.UDT_CountryISO2    NOT NULL;
+ALTER TABLE [PrestigeCars].[Data].[Customer]
+    ALTER COLUMN Country       dbo.UDT_CountryName    NOT NULL;
+ALTER TABLE [PrestigeCars].[Data].[Customer]
+    ALTER COLUMN IsReseller    dbo.UDT_IsReseller     NOT NULL;
+ALTER TABLE [PrestigeCars].[Data].[Customer]
+    ALTER COLUMN IsCreditRisk  dbo.UDT_IsCreditRisk   NOT NULL;
 GO
 ```
 
-*(Nine* `ALTER TABLE … ALTER COLUMN …` *statements then converted every column to its UDT.)*
+---
 
 ---
 
 ### Step 4 — DefaultConstraints.sql
 
-**Goal:** add **all** defaults—final values shown; idempotent.
+**Goal:** Add defaults for all columns and ensure no legacy NULLs remain.
 
 ```sql
 /* DefaultConstraints.sql */
 /* Author: Mehtab Mahir */
 USE PrestigeCars;
 GO
-
 -- Backfill existing NULLs to default values before applying constraints
 UPDATE [PrestigeCars].[Data].[Customer]
 SET
@@ -109,37 +119,27 @@ SET
     IsReseller   = ISNULL(IsReseller, 0),
     IsCreditRisk = ISNULL(IsCreditRisk, 0);
 GO
-
 -- Add default constraints (idempotent)
 IF NOT EXISTS (SELECT 1 FROM sys.default_constraints WHERE parent_object_id = OBJECT_ID('[PrestigeCars].[Data].[Customer]') AND name='DF_Customer_CustomerName')
     ALTER TABLE [PrestigeCars].[Data].[Customer] ADD CONSTRAINT DF_Customer_CustomerName DEFAULT(N'')         FOR CustomerName;
-
 IF NOT EXISTS (SELECT 1 FROM sys.default_constraints WHERE parent_object_id = OBJECT_ID('[PrestigeCars].[Data].[Customer]') AND name='DF_Customer_Address1')
     ALTER TABLE [PrestigeCars].[Data].[Customer] ADD CONSTRAINT DF_Customer_Address1     DEFAULT(N'')         FOR Address1;
-
 IF NOT EXISTS (SELECT 1 FROM sys.default_constraints WHERE parent_object_id = OBJECT_ID('[PrestigeCars].[Data].[Customer]') AND name='DF_Customer_Address2')
     ALTER TABLE [PrestigeCars].[Data].[Customer] ADD CONSTRAINT DF_Customer_Address2     DEFAULT(N'')         FOR Address2;
-
 IF NOT EXISTS (SELECT 1 FROM sys.default_constraints WHERE parent_object_id = OBJECT_ID('[PrestigeCars].[Data].[Customer]') AND name='DF_Customer_Town')
     ALTER TABLE [PrestigeCars].[Data].[Customer] ADD CONSTRAINT DF_Customer_Town         DEFAULT(N'Unknown')  FOR Town;
-
 IF NOT EXISTS (SELECT 1 FROM sys.default_constraints WHERE parent_object_id = OBJECT_ID('[PrestigeCars].[Data].[Customer]') AND name='DF_Customer_PostCode')
     ALTER TABLE [PrestigeCars].[Data].[Customer] ADD CONSTRAINT DF_Customer_PostCode     DEFAULT(N'Unknown')  FOR PostCode;
-
 IF NOT EXISTS (SELECT 1 FROM sys.default_constraints WHERE parent_object_id = OBJECT_ID('[PrestigeCars].[Data].[Customer]') AND name='DF_Customer_Country')
     ALTER TABLE [PrestigeCars].[Data].[Customer] ADD CONSTRAINT DF_Customer_Country      DEFAULT(N'')         FOR Country;
-
 IF NOT EXISTS (SELECT 1 FROM sys.default_constraints WHERE parent_object_id = OBJECT_ID('[PrestigeCars].[Data].[Customer]') AND name='DF_Customer_IsReseller')
     ALTER TABLE [PrestigeCars].[Data].[Customer] ADD CONSTRAINT DF_Customer_IsReseller   DEFAULT(0)           FOR IsReseller;
-
 IF NOT EXISTS (SELECT 1 FROM sys.default_constraints WHERE parent_object_id = OBJECT_ID('[PrestigeCars].[Data].[Customer]') AND name='DF_Customer_IsCreditRisk')
     ALTER TABLE [PrestigeCars].[Data].[Customer] ADD CONSTRAINT DF_Customer_IsCreditRisk DEFAULT(0)           FOR IsCreditRisk;
-
 IF NOT EXISTS (SELECT 1 FROM sys.check_constraints WHERE parent_object_id = OBJECT_ID('[PrestigeCars].[Data].[Customer]') AND name='CK_Customer_PostCodeLen')
     ALTER TABLE [PrestigeCars].[Data].[Customer] ADD CONSTRAINT CK_Customer_PostCodeLen CHECK (LEN(PostCode) <= 8 OR PostCode IS NULL);
 GO
 ```
-*Fixed existing nulls not getting removed.*
 
 ---
 
@@ -166,4 +166,3 @@ FROM [PrestigeCars].[Data].[Customer];
 *Result: all counts = 0 (expected). Had to fix PostCode initially.*
 
 ---
-
