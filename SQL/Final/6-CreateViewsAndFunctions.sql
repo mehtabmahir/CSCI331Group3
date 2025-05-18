@@ -1,87 +1,234 @@
-USE PrestigeCars_3NF;
+USE PrestigeCars_3NF
 GO
 
--- Author: William Wang --
-
--- View: Stock with Color Name
-CREATE OR ALTER VIEW vw_StockWithColor AS
-SELECT s.StockCode, s.ModelID, s.Cost, s.RepairsCost, s.PartsCost, s.TransportInCost, s.IsRHD,
-       c.Color AS ColorName, s.BuyerComments, s.DateBought, s.TimeBought
-FROM Data.Stock s
-LEFT JOIN Reference.Color c ON s.ColorID = c.ColorID;
+-- Views
+-- Combines all yearly sales into one
+CREATE OR ALTER VIEW vw_AllSales AS
+SELECT *, 2015 AS SalesYear FROM DataTransfer.Sales2015
+UNION ALL
+SELECT *, 2016 AS SalesYear FROM DataTransfer.Sales2016
+UNION ALL
+SELECT *, 2017 AS SalesYear FROM DataTransfer.Sales2017
+UNION ALL
+SELECT *, 2018 AS SalesYear FROM DataTransfer.Sales2018;
 GO
 
--- View: Sales By Year and Color
-CREATE OR ALTER VIEW vw_SalesByYearAndColor AS
-SELECT YEAR(s.SaleDate) AS SaleYear, c.Color, COUNT(sd.SalesDetailsID) AS CarsSold, SUM(sd.SalePrice) AS TotalRevenue
-FROM Data.Sales s
-JOIN Data.SalesDetails sd ON s.SalesID = sd.SalesID
-LEFT JOIN Data.Stock st ON sd.StockID = st.StockCode
-LEFT JOIN Reference.Color c ON st.ColorID = c.ColorID
-GROUP BY YEAR(s.SaleDate), c.Color;
+-- Show car models, costs, and their marketing types
+CREATE OR ALTER VIEW vw_StockWithMarketing AS
+SELECT
+    s.MakeName,
+    s.ModelName,
+    s.Cost,
+    m.MarketingType
+FROM Output.StockPrices s
+LEFT JOIN Reference.MarketingCategories m ON s.MakeName = m.MakeName;
 GO
 
--- View: Models With Stock
-CREATE OR ALTER VIEW vw_ModelsWithStock AS
-SELECT m.ModelID, m.ModelName, m.ModelVariant, mk.MakeName, COUNT(s.StockCode) AS StockCount
-FROM Data.Model m
-LEFT JOIN Data.Make mk ON m.MakeID = mk.MakeID
-LEFT JOIN Data.Stock s ON m.ModelID = s.ModelID
-GROUP BY m.ModelID, m.ModelName, m.ModelVariant, mk.MakeName;
+-- Show budget details grouped by year
+CREATE OR ALTER VIEW vw_YearlyBudgetSummary AS
+SELECT
+    BudgetYear,
+    SUM(BudgetAmount) AS TotalBudget
+FROM Reference.SalesBudgets
+GROUP BY BudgetYear;
 GO
 
--- View: Customers With Sales
-CREATE OR ALTER VIEW vw_CustomersWithSales AS
-SELECT c.CustomerID, c.CustomerName, c.CountryID, COUNT(s.SalesID) AS SalesCount, SUM(s.TotalSalePrice) AS TotalSales
-FROM Data.Customer c
-LEFT JOIN Data.Sales s ON c.CustomerID = s.CustomerID
-GROUP BY c.CustomerID, c.CustomerName, c.CountryID;
+-- Reference table views (simple)
+CREATE OR ALTER VIEW vw_Forex AS
+SELECT ExchangeDate, ISOCurrency, ExchangeRate
+FROM Reference.Forex;
 GO
 
--- View: Country Sales Summary
-CREATE OR ALTER VIEW vw_CountrySales AS
-SELECT rc.CountryName, COUNT(s.SalesID) AS SalesCount, SUM(s.TotalSalePrice) AS TotalRevenue
-FROM Reference.Country rc
-LEFT JOIN Data.Customer c ON rc.CountryID = c.CountryID
-LEFT JOIN Data.Sales s ON c.CustomerID = s.CustomerID
-GROUP BY rc.CountryName;
+CREATE OR ALTER VIEW vw_MarketingCategories AS
+SELECT MakeName, MarketingType
+FROM Reference.MarketingCategories;
 GO
 
--- View: Yearly Sales Summary
-CREATE OR ALTER VIEW vw_YearlySalesSummary AS
-SELECT YEAR(s.SaleDate) AS SaleYear, SUM(s.TotalSalePrice) AS TotalRevenue, COUNT(s.SalesID) AS NumberOfSales
-FROM Data.Sales s
-GROUP BY YEAR(s.SaleDate);
+CREATE OR ALTER VIEW vw_MarketingInformation AS
+SELECT CUST, Country, SpendCapacity
+FROM Reference.MarketingInformation;
 GO
 
--- View: Budget with Details
-CREATE OR ALTER VIEW vw_BudgetWithDetails AS
-SELECT b.BudgetKey, b.BudgetValue, b.Year, b.Month, b.BudgetDetail, b.BudgetElement, c.Color
-FROM Reference.Budget b
-LEFT JOIN Reference.Color c ON b.BudgetDetail = c.Color
+CREATE OR ALTER VIEW vw_SalesBudgets AS
+SELECT SalesBudgetID, ColorID, BudgetYear, BudgetAmount
+FROM Reference.SalesBudgets;
 GO
 
--- Inline Table-Valued Function: Customer Sales Summary
-CREATE OR ALTER FUNCTION fn_CustomerSalesSummary (@CustomerID NVARCHAR(5))
+CREATE OR ALTER VIEW vw_SalesCategory AS
+SELECT LowerThreshold, UpperThreshold, CategoryDescription
+FROM Reference.SalesCategory;
+GO
+
+CREATE OR ALTER VIEW vw_Staff AS
+SELECT StaffID, StaffName, ManagerID, Department
+FROM Reference.Staff;
+GO
+
+CREATE OR ALTER VIEW vw_StaffHierarchy AS
+SELECT HierarchyReference, StaffID, StaffName, ManagerID, Department
+FROM Reference.StaffHierarchy;
+GO
+
+CREATE OR ALTER VIEW vw_YearlySales AS
+SELECT MakeName, ModelName, CustomerName, CountryName, Cost, RepairsCost, PartsCost, TransportInCost, SalePrice, SaleDate
+FROM Reference.YearlySales;
+GO
+
+CREATE OR ALTER VIEW vw_SalesInPounds AS
+SELECT MakeName, ModelName, VehicleCost
+FROM SourceData.SalesInPounds;
+GO
+
+CREATE OR ALTER VIEW vw_SalesText AS
+SELECT CountryName, MakeName, Cost, SalePrice
+FROM SourceData.SalesText;
+GO
+
+-- ITVFs (inline table-valued functions)
+-- Get all sales from 2015 to 2018
+CREATE OR ALTER FUNCTION dbo.fn_GetAllSales()
 RETURNS TABLE
 AS
 RETURN
-    SELECT s.SalesID, s.SaleDate, s.TotalSalePrice
-    FROM Data.Sales s
-    WHERE s.CustomerID = @CustomerID;
+(
+    SELECT *, 2015 AS SalesYear FROM DataTransfer.Sales2015
+    UNION ALL
+    SELECT *, 2016 AS SalesYear FROM DataTransfer.Sales2016
+    UNION ALL
+    SELECT *, 2017 AS SalesYear FROM DataTransfer.Sales2017
+    UNION ALL
+    SELECT *, 2018 AS SalesYear FROM DataTransfer.Sales2018
+);
 GO
 
--- Inline Table-Valued Function: Model Sales By Year
-CREATE OR ALTER FUNCTION fn_ModelSalesByYear (@ModelID INT)
+-- Function to filter StockPrices by Make
+CREATE OR ALTER FUNCTION fn_StockPricesByMake (@MakeName NVARCHAR(100))
 RETURNS TABLE
 AS
-RETURN
-    SELECT YEAR(s.SaleDate) AS SaleYear, SUM(sd.SalePrice) AS TotalSales
-    FROM Data.SalesDetails sd
-    JOIN Data.Sales s ON sd.SalesID = s.SalesID
-    JOIN Data.Stock st ON sd.StockID = st.StockCode
-    WHERE st.ModelID = @ModelID
-    GROUP BY YEAR(s.SaleDate);
+RETURN (
+    SELECT MakeName, ModelName, Cost
+    FROM Output.StockPrices
+    WHERE MakeName = @MakeName
+);
 GO
 
--- (You can also re-add the passthrough views if needed)
+-- Function to get SalesBudgets entries by Year
+CREATE OR ALTER FUNCTION fn_SalesBudgetsByYear (@BudgetYear INT)
+RETURNS TABLE
+AS
+RETURN (
+    SELECT SalesBudgetID, ColorID, BudgetYear, BudgetAmount
+    FROM Reference.SalesBudgets
+    WHERE BudgetYear = @BudgetYear
+);
+GO
+
+-- Function to filter Forex by currency code
+CREATE OR ALTER FUNCTION fn_ForexByCurrency (@ISOCurrency CHAR(3))
+RETURNS TABLE
+AS
+RETURN (
+    SELECT ExchangeDate, ISOCurrency, ExchangeRate
+    FROM Reference.Forex
+    WHERE ISOCurrency = @ISOCurrency
+);
+GO
+
+-- Filter MarketingCategories by make name
+CREATE OR ALTER FUNCTION fn_MarketingCategoriesByMake (@MakeName NVARCHAR(100))
+RETURNS TABLE
+AS
+RETURN (
+    SELECT MakeName, MarketingType
+    FROM Reference.MarketingCategories
+    WHERE MakeName = @MakeName
+);
+GO
+
+-- Filter MarketingInfo by country code
+CREATE OR ALTER FUNCTION fn_MarketingInfoByCountry (@Country NCHAR(10))
+RETURNS TABLE
+AS
+RETURN (
+    SELECT CUST, Country, SpendCapacity
+    FROM Reference.MarketingInformation
+    WHERE Country = @Country
+);
+GO
+
+-- Find SalesCategory by value threshold
+CREATE OR ALTER FUNCTION fn_SalesCategoryByValue (@Value INT)
+RETURNS TABLE
+AS
+RETURN (
+    SELECT LowerThreshold, UpperThreshold, CategoryDescription
+    FROM Reference.SalesCategory
+    WHERE @Value BETWEEN LowerThreshold AND UpperThreshold
+);
+GO
+
+-- Filter Staff by Department
+CREATE OR ALTER FUNCTION fn_StaffByDepartment (@Department NVARCHAR(50))
+RETURNS TABLE
+AS
+RETURN (
+    SELECT StaffID, StaffName, ManagerID, Department
+    FROM Reference.Staff
+    WHERE Department = @Department
+);
+GO
+
+-- Filter StaffHierarchy by Manager
+CREATE OR ALTER FUNCTION fn_StaffHierarchyByManager (@ManagerID INT)
+RETURNS TABLE
+AS
+RETURN (
+    SELECT HierarchyReference, StaffID, StaffName, ManagerID, Department
+    FROM Reference.StaffHierarchy
+    WHERE ManagerID = @ManagerID
+);
+GO
+
+-- Filter YearlySales by date range
+CREATE OR ALTER FUNCTION fn_YearlySalesByDateRange (
+    @StartDate DATETIME,
+    @EndDate DATETIME
+)
+RETURNS TABLE
+AS
+RETURN (
+    SELECT MakeName, ModelName, CustomerName, CountryName, Cost, RepairsCost, PartsCost, TransportInCost, SalePrice, SaleDate
+    FROM Reference.YearlySales
+    WHERE SaleDate BETWEEN @StartDate AND @EndDate
+);
+GO
+
+-- Filter SalesInPounds by Make/Model
+CREATE OR ALTER FUNCTION fn_SalesInPoundsByMakeModel (
+    @MakeName NVARCHAR(100),
+    @ModelName NVARCHAR(150)
+)
+RETURNS TABLE
+AS
+RETURN (
+    SELECT MakeName, ModelName, VehicleCost
+    FROM SourceData.SalesInPounds
+    WHERE MakeName = @MakeName
+      AND ModelName = @ModelName
+);
+GO
+
+-- Filter SalesText by Country and Make
+CREATE OR ALTER FUNCTION fn_SalesTextByCountryMake (
+    @CountryName NVARCHAR(150),
+    @MakeName NVARCHAR(100)
+)
+RETURNS TABLE
+AS
+RETURN (
+    SELECT CountryName, MakeName, Cost, SalePrice
+    FROM SourceData.SalesText
+    WHERE CountryName = @CountryName
+      AND MakeName = @MakeName
+);
+GO
