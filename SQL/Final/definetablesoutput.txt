@@ -1,0 +1,16 @@
+Msg 3726, Level 16, State 1, Line 19
+Could not drop object 'Reference.Color' because it is referenced by a FOREIGN KEY constraint.
+Msg 2714, Level 16, State 6, Line 20
+There is already an object named 'Color' in the database.
+Msg 1778, Level 16, State 0, Line 165
+Column 'Data.Model.ModelID' is not the same data type as referencing column 'Stock.ModelID' in foreign key 'FK_Stock_Model'.
+Msg 1750, Level 16, State 1, Line 165
+Could not create constraint or index. See previous errors.
+Msg 1767, Level 16, State 0, Line 197
+Foreign key 'FK_SalesDetails_Stock' references invalid table 'Data.Stock'.
+Msg 1750, Level 16, State 1, Line 197
+Could not create constraint or index. See previous errors.
+
+Completion time: 2025-05-17T22:10:34.9717316-04:00
+
+Note: The drop errors may not be an issue
