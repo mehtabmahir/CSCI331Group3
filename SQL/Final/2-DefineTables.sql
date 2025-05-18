@@ -1,6 +1,8 @@
 USE PrestigeCars_3NF
 GO
 
+-- Credits: Ashly --
+
 -- REFERENCE TABLES
 
 DROP TABLE IF EXISTS Reference.Country;
