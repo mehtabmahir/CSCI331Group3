@@ -1,4 +1,0 @@
-The module 'TruncateStarSchemaData' depends on the missing object 'Process.usp_TrackWorkFlow'. The module will still be created; however, it cannot run successfully until the object exists.
-The module 'DropForeignKeysFromStarSchemaData' depends on the missing object 'Process.usp_TrackWorkFlow'. The module will still be created; however, it cannot run successfully until the object exists.
-
-Completion time: 2025-05-17T22:35:30.9918774-04:00
