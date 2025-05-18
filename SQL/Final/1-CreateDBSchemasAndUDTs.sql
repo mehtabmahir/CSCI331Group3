@@ -1,6 +1,13 @@
+-- Drop the existing 3NF database if it exists
+IF DB_ID('PrestigeCars_3NF') IS NOT NULL
+BEGIN
+    ALTER DATABASE PrestigeCars_3NF SET SINGLE_USER WITH ROLLBACK IMMEDIATE;
+    DROP DATABASE PrestigeCars_3NF;
+END
+GO
+
 -- Create new 3NF database and switch context to it
-IF DB_ID('PrestigeCars_3NF') IS NULL  
-    CREATE DATABASE PrestigeCars_3NF;
+CREATE DATABASE PrestigeCars_3NF;
 GO
 USE PrestigeCars_3NF;
 GO
@@ -21,11 +28,12 @@ GO
 CREATE SCHEMA [Process];
 GO
 
-/* CreateUDTs.sql - Author: Mehtab Mahir */
+/* CreateUDTs.sql - Author: Mehtab Mahir (with type fixes) */
 -- Define all User-Defined Types (UDTs) if they do not already exist
+
 -- COUNTRY-related UDTs
 IF NOT EXISTS (SELECT 1 FROM sys.types WHERE name = 'UDT_CountryID')
-    CREATE TYPE dbo.UDT_CountryID FROM INT;
+    CREATE TYPE dbo.UDT_CountryID FROM SMALLINT;
 IF NOT EXISTS (SELECT 1 FROM sys.types WHERE name = 'UDT_CountryName')
     CREATE TYPE dbo.UDT_CountryName FROM NVARCHAR(150);
 IF NOT EXISTS (SELECT 1 FROM sys.types WHERE name = 'UDT_CountryISO2')
@@ -35,15 +43,15 @@ IF NOT EXISTS (SELECT 1 FROM sys.types WHERE name = 'UDT_CountryISO3')
 IF NOT EXISTS (SELECT 1 FROM sys.types WHERE name = 'UDT_Region')
     CREATE TYPE dbo.UDT_Region FROM NVARCHAR(20);
 
--- MAKE/MODEL-related UDTs
+-- MAKE/MODEL-related UDTs (all PK/FK are SMALLINT in original)
 IF NOT EXISTS (SELECT 1 FROM sys.types WHERE name = 'UDT_MakeID')
-    CREATE TYPE dbo.UDT_MakeID FROM INT;
+    CREATE TYPE dbo.UDT_MakeID FROM SMALLINT;
 IF NOT EXISTS (SELECT 1 FROM sys.types WHERE name = 'UDT_MakeName')
     CREATE TYPE dbo.UDT_MakeName FROM NVARCHAR(100);
 IF NOT EXISTS (SELECT 1 FROM sys.types WHERE name = 'UDT_MakeCountry')
     CREATE TYPE dbo.UDT_MakeCountry FROM CHAR(3);
 IF NOT EXISTS (SELECT 1 FROM sys.types WHERE name = 'UDT_ModelID')
-    CREATE TYPE dbo.UDT_ModelID FROM INT;
+    CREATE TYPE dbo.UDT_ModelID FROM SMALLINT;
 IF NOT EXISTS (SELECT 1 FROM sys.types WHERE name = 'UDT_ModelName')
     CREATE TYPE dbo.UDT_ModelName FROM NVARCHAR(150);
 IF NOT EXISTS (SELECT 1 FROM sys.types WHERE name = 'UDT_ModelVariant')
@@ -63,7 +71,7 @@ IF NOT EXISTS (SELECT 1 FROM sys.types WHERE name = 'UDT_CustomerName')
 IF NOT EXISTS (SELECT 1 FROM sys.types WHERE name = 'UDT_Address')
     CREATE TYPE dbo.UDT_Address FROM NVARCHAR(50);
 IF NOT EXISTS (SELECT 1 FROM sys.types WHERE name = 'UDT_CountryRef')
-    CREATE TYPE dbo.UDT_CountryRef FROM INT;
+    CREATE TYPE dbo.UDT_CountryRef FROM SMALLINT;
 IF NOT EXISTS (SELECT 1 FROM sys.types WHERE name = 'UDT_IsReseller')
     CREATE TYPE dbo.UDT_IsReseller FROM BIT;
 IF NOT EXISTS (SELECT 1 FROM sys.types WHERE name = 'UDT_IsCreditRisk')
@@ -75,7 +83,7 @@ IF NOT EXISTS (SELECT 1 FROM sys.types WHERE name = 'UDT_StockCode')
 IF NOT EXISTS (SELECT 1 FROM sys.types WHERE name = 'UDT_ModelRef')
     CREATE TYPE dbo.UDT_ModelRef FROM SMALLINT;
 IF NOT EXISTS (SELECT 1 FROM sys.types WHERE name = 'UDT_ColorID')
-    CREATE TYPE dbo.UDT_ColorID FROM INT;
+    CREATE TYPE dbo.UDT_ColorID FROM SMALLINT;
 IF NOT EXISTS (SELECT 1 FROM sys.types WHERE name = 'UDT_Cost')
     CREATE TYPE dbo.UDT_Cost FROM MONEY;
 IF NOT EXISTS (SELECT 1 FROM sys.types WHERE name = 'UDT_RepairsCost')
