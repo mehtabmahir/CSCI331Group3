@@ -1,7 +1,7 @@
 USE PrestigeCars_3NF
 GO
 
--- Credits: William
+-- Credits: William & Mehtab
 
 -- Views
 -- Combines all yearly sales into one
@@ -26,17 +26,15 @@ FROM Output.StockPrices s
 LEFT JOIN Reference.MarketingCategories m ON s.MakeName = m.MakeName;
 GO
 
--- Show budget details grouped by year
-CREATE OR ALTER VIEW vw_SalesBudgets  AS
+-- Show budget details (fixed to use new Reference.Budget structure)
+CREATE OR ALTER VIEW vw_SalesBudgets AS
 SELECT
-    BudgetArea, 
-    BudgetAmount, 
-    BudgetYear, 
-    DateUpdated, 
-    Comments, 
-    BudgetMonth 
-FROM Reference.SalesBudgets
-GROUP BY BudgetYear;
+    BudgetValue,
+    Year AS BudgetYear,
+    Month AS BudgetMonth,
+    BudgetDetail,
+    BudgetElement
+FROM Reference.Budget;
 GO
 
 -- Reference table views (simple)
@@ -54,7 +52,6 @@ CREATE OR ALTER VIEW vw_MarketingInformation AS
 SELECT CUST, Country, SpendCapacity
 FROM Reference.MarketingInformation;
 GO
-
 
 CREATE OR ALTER VIEW vw_SalesCategory AS
 SELECT LowerThreshold, UpperThreshold, CategoryDescription
@@ -114,14 +111,19 @@ RETURN (
 );
 GO
 
--- Function to get SalesBudgets entries by Year
+-- Function to get Budget entries by Year (fixed)
 CREATE OR ALTER FUNCTION fn_SalesBudgetsByYear (@BudgetYear INT)
 RETURNS TABLE
 AS
 RETURN (
-    SELECT SalesBudgetID, ColorID, BudgetYear, BudgetAmount
-    FROM Reference.SalesBudgets
-    WHERE BudgetYear = @BudgetYear
+    SELECT
+        BudgetValue,
+        Year AS BudgetYear,
+        Month AS BudgetMonth,
+        BudgetDetail,
+        BudgetElement
+    FROM Reference.Budget
+    WHERE Year = @BudgetYear
 );
 GO
 

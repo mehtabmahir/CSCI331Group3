@@ -1,6 +1,8 @@
 USE PrestigeCars_3NF
 GO
 
+-- Author: Mehtab Mahir --
+
 -- Reference.Country
 INSERT INTO Reference.Country (CountryName, CountryISO2, CountryISO3, SalesRegion, CountryFlag, FlagFileName, FlagFileType)
 SELECT 
