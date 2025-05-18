@@ -1,6 +1,8 @@
 USE PrestigeCars_3NF
 GO
 
+--Author: Mehtab Mahir--
+
 SELECT 
     'Data.Country' AS TableName,
     (SELECT COUNT(*) FROM PrestigeCars.Data.Country) AS OriginalCount,
