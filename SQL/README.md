@@ -1,6 +1,14 @@
-This project was developed by Mehtab, Ashly, Maitri, Nayem, William, and Sabrina.
 
 # PrestigeCars\_3NF Migration Notebook
+
+* **Mehtab (Leader):** Integrated all group work, coordinated workflow, implemented and refined most SQL scripts, made sure all parts functioned together, and provided troubleshooting/support for all technical tasks.
+* **Ashly (Co-Leader):** Helped organize and distribute work, contributed to schema design, finalized presentation slides, and supported team communications.
+* **Maitri:** Assisted with the initial project structure, helped with schema planning, and contributed to the group presentation.
+* **Nayem:** Wrote and improved utility stored procedures (truncate/drop FKs) and helped with data migration tasks.
+* **William:** Developed views, inline table-valued functions, and assisted with data validation.
+* **Sabrina:** Helped with the group presentation and provided team support.
+
+---
 
 We create the new **PrestigeCars\_3NF** database from the existing **PrestigeCars** database by applying Third Normal Form (3NF) normalization and data cleaning, while preserving all records with no broken dependencies.
 
