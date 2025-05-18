@@ -27,10 +27,14 @@ LEFT JOIN Reference.MarketingCategories m ON s.MakeName = m.MakeName;
 GO
 
 -- Show budget details grouped by year
-CREATE OR ALTER VIEW vw_YearlyBudgetSummary AS
+CREATE OR ALTER VIEW vw_SalesBudgets  AS
 SELECT
-    BudgetYear,
-    SUM(BudgetAmount) AS TotalBudget
+    BudgetArea, 
+    BudgetAmount, 
+    BudgetYear, 
+    DateUpdated, 
+    Comments, 
+    BudgetMonth 
 FROM Reference.SalesBudgets
 GROUP BY BudgetYear;
 GO
@@ -51,10 +55,6 @@ SELECT CUST, Country, SpendCapacity
 FROM Reference.MarketingInformation;
 GO
 
-CREATE OR ALTER VIEW vw_SalesBudgets AS
-SELECT SalesBudgetID, ColorID, BudgetYear, BudgetAmount
-FROM Reference.SalesBudgets;
-GO
 
 CREATE OR ALTER VIEW vw_SalesCategory AS
 SELECT LowerThreshold, UpperThreshold, CategoryDescription
