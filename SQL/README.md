@@ -12,6 +12,7 @@
 
 We create the new **PrestigeCars\_3NF** database from the existing **PrestigeCars** database by applying Third Normal Form (3NF) normalization and data cleaning, while preserving all records with no broken dependencies.
 
+Note: Please first load **PrestigeCars** DB into your system.
 ## 1. Create Schemas and User-Defined Types
 
 First, we ensure a clean environment by dropping any existing **PrestigeCars\_3NF** database, then create the new database and define the required schemas. We then execute the full user-defined type (UDT) creation script to enforce consistent data types across the schema:
