@@ -1,6 +1,8 @@
 USE PrestigeCars_3NF
 GO
 
+--Author: Mehtab Mahir--
+
 -- Views for reference and source tables (simple select aliases)
 CREATE VIEW vw_SalesCategory AS
 SELECT LowerThreshold, UpperThreshold, CategoryDescription
