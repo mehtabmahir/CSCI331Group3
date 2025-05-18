@@ -7,14 +7,14 @@ GO
 
 DROP TABLE IF EXISTS Reference.Country;
 CREATE TABLE Reference.Country (
-    CountryID    dbo.UDT_CountryID     IDENTITY(1,1) PRIMARY KEY,
-    CountryName  dbo.UDT_CountryName   NOT NULL DEFAULT(''),
-    CountryISO2  dbo.UDT_CountryISO2   NOT NULL DEFAULT(''),
-    CountryISO3  dbo.UDT_CountryISO3   NOT NULL DEFAULT(''),
-    SalesRegion  dbo.UDT_Region        NOT NULL DEFAULT(''),
-    CountryFlag      VARBINARY(MAX)    NULL,
-    FlagFileName     NVARCHAR(50)      NOT NULL DEFAULT(''),
-    FlagFileType     NCHAR(3)          NOT NULL DEFAULT('')
+    CountryID      dbo.UDT_CountryID     IDENTITY(1,1) PRIMARY KEY,
+    CountryName    dbo.UDT_CountryName   NOT NULL DEFAULT(''),
+    CountryISO2    dbo.UDT_CountryISO2   NOT NULL DEFAULT(''),
+    CountryISO3    dbo.UDT_CountryISO3   NOT NULL DEFAULT(''),
+    SalesRegion    dbo.UDT_Region        NOT NULL DEFAULT(''),
+    CountryFlag    dbo.UDT_CountryFlag   NOT NULL DEFAULT(0x),
+    FlagFileName   dbo.UDT_FlagFileName  NOT NULL DEFAULT(''),
+    FlagFileType   dbo.UDT_FlagFileType  NOT NULL DEFAULT('')
 );
 GO
 
@@ -204,6 +204,22 @@ CREATE TABLE Data.PivotTable (
 );
 GO
 
+
+DROP TABLE IF EXISTS Data.Country;
+CREATE TABLE Data.Country (
+    CountryID      dbo.UDT_CountryID     IDENTITY(1,1) PRIMARY KEY,
+    CountryName    dbo.UDT_CountryName   NOT NULL DEFAULT(''),
+    CountryISO2    dbo.UDT_CountryISO2   NOT NULL DEFAULT(''),
+    CountryISO3    dbo.UDT_CountryISO3   NOT NULL DEFAULT(''),
+    SalesRegion    dbo.UDT_Region        NOT NULL DEFAULT(''),
+    CountryFlag    dbo.UDT_CountryFlag   NOT NULL DEFAULT(0x),
+    FlagFileName   dbo.UDT_FlagFileName  NOT NULL DEFAULT(''),
+    FlagFileType   dbo.UDT_FlagFileType  NOT NULL DEFAULT('')
+);
+GO
+
+
+
 -- DATATRANSFER TABLES
 
 DROP TABLE IF EXISTS DataTransfer.Sales2015;
@@ -305,3 +321,5 @@ CREATE TABLE Output.StockPrices (
     Cost       MONEY         NOT NULL DEFAULT(0)
 );
 GO
+
+

@@ -4,13 +4,16 @@ GO
 -- Author: Mehtab Mahir --
 
 -- Reference.Country
-INSERT INTO Reference.Country (CountryName, CountryISO2, CountryISO3, SalesRegion, CountryFlag, FlagFileName, FlagFileType)
+INSERT INTO Reference.Country (
+    CountryName, CountryISO2, CountryISO3, SalesRegion,
+    CountryFlag, FlagFileName, FlagFileType
+)
 SELECT 
     ISNULL(RTRIM(LTRIM(C.CountryName)), ''),
     ISNULL(UPPER(RTRIM(LTRIM(C.CountryISO2))), ''),
     ISNULL(UPPER(RTRIM(LTRIM(C.CountryISO3))), ''),
     ISNULL(RTRIM(LTRIM(C.SalesRegion)), ''),
-    C.CountryFlag,
+    ISNULL(C.CountryFlag, 0x),    -- Always fills with empty binary if NULL
     ISNULL(C.FlagFileName, ''),
     ISNULL(C.FlagFileType, '')
 FROM PrestigeCars.Data.Country AS C;
@@ -45,6 +48,23 @@ FROM PrestigeCars.Data.Model AS Old
 INNER JOIN Data.Make AS M2 
     ON M2.MakeID = Old.MakeID;
 GO
+
+-- Data.Country
+INSERT INTO Data.Country (
+    CountryName, CountryISO2, CountryISO3, SalesRegion,
+    CountryFlag, FlagFileName, FlagFileType
+)
+SELECT 
+    ISNULL(RTRIM(LTRIM(C.CountryName)), ''),
+    ISNULL(UPPER(RTRIM(LTRIM(C.CountryISO2))), ''),
+    ISNULL(UPPER(RTRIM(LTRIM(C.CountryISO3))), ''),
+    ISNULL(RTRIM(LTRIM(C.SalesRegion)), ''),
+    ISNULL(C.CountryFlag, 0x),
+    ISNULL(C.FlagFileName, ''),
+    ISNULL(C.FlagFileType, '')
+FROM PrestigeCars.Data.Country AS C;
+GO
+
 
 -- Data.Customer
 INSERT INTO Data.Customer (CustomerID, CustomerName, Address1, Address2, Town, PostCode, CountryID, IsReseller, IsCreditRisk)

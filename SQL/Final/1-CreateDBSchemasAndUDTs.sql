@@ -119,3 +119,12 @@ IF NOT EXISTS (SELECT 1 FROM sys.types WHERE name = 'UDT_SalePrice')
 IF NOT EXISTS (SELECT 1 FROM sys.types WHERE name = 'UDT_LineItemDiscount')
     CREATE TYPE dbo.UDT_LineItemDiscount FROM NUMERIC(18,2);
 GO
+
+-- Country Flag and Metadata UDTs
+IF NOT EXISTS (SELECT 1 FROM sys.types WHERE name = 'UDT_CountryFlag')
+    CREATE TYPE dbo.UDT_CountryFlag FROM VARBINARY(MAX) NOT NULL;
+IF NOT EXISTS (SELECT 1 FROM sys.types WHERE name = 'UDT_FlagFileName')
+    CREATE TYPE dbo.UDT_FlagFileName FROM NVARCHAR(50) NOT NULL;
+IF NOT EXISTS (SELECT 1 FROM sys.types WHERE name = 'UDT_FlagFileType')
+    CREATE TYPE dbo.UDT_FlagFileType FROM NCHAR(3) NOT NULL;
+
