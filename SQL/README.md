@@ -1,15 +1,24 @@
-# PrestigeCars_3NF Migration Notebook
+This project was developed by Mehtab, Ashly, Maitri, Nayem, William, and Sabrina.
 
-*Note:* This notebook integrates contributions from all team members – Mehtab (data normalization & cleaning logic), Ashly & Maitri (initial database schema design), Nayem (utility procedures), and William (views & inline TVFs). It builds the new **PrestigeCars\_3NF** database from the existing **PrestigeCars** database, applying 3NF normalization, data cleaning, and preserving all records with no broken dependencies.
+# PrestigeCars\_3NF Migration Notebook
+
+We create the new **PrestigeCars\_3NF** database from the existing **PrestigeCars** database by applying Third Normal Form (3NF) normalization and data cleaning, while preserving all records with no broken dependencies.
 
 ## 1. Create Schemas and User-Defined Types
 
-First, we create the new database (if not already created) and define the required schemas. Then execute the full user-defined type (UDT) creation script to enforce consistent data types across the schema:
+First, we ensure a clean environment by dropping any existing **PrestigeCars\_3NF** database, then create the new database and define the required schemas. We then execute the full user-defined type (UDT) creation script to enforce consistent data types across the schema:
 
 ```sql
+-- Drop existing PrestigeCars_3NF database if it exists (start fresh)
+IF DB_ID('PrestigeCars_3NF') IS NOT NULL
+BEGIN
+    ALTER DATABASE PrestigeCars_3NF SET SINGLE_USER WITH ROLLBACK IMMEDIATE;
+    DROP DATABASE PrestigeCars_3NF;
+END;
+GO
+
 -- Create new 3NF database and switch context to it
-IF DB_ID('PrestigeCars_3NF') IS NULL  
-    CREATE DATABASE PrestigeCars_3NF;
+CREATE DATABASE PrestigeCars_3NF;
 GO
 USE PrestigeCars_3NF;
 GO
@@ -30,11 +39,10 @@ GO
 CREATE SCHEMA [Process];
 GO
 
-/* CreateUDTs.sql - Author: Mehtab Mahir */
 -- Define all User-Defined Types (UDTs) if they do not already exist
 -- COUNTRY-related UDTs
 IF NOT EXISTS (SELECT 1 FROM sys.types WHERE name = 'UDT_CountryID')
-    CREATE TYPE dbo.UDT_CountryID FROM INT;
+    CREATE TYPE dbo.UDT_CountryID FROM SMALLINT;
 IF NOT EXISTS (SELECT 1 FROM sys.types WHERE name = 'UDT_CountryName')
     CREATE TYPE dbo.UDT_CountryName FROM NVARCHAR(150);
 IF NOT EXISTS (SELECT 1 FROM sys.types WHERE name = 'UDT_CountryISO2')
@@ -46,13 +54,13 @@ IF NOT EXISTS (SELECT 1 FROM sys.types WHERE name = 'UDT_Region')
 
 -- MAKE/MODEL-related UDTs
 IF NOT EXISTS (SELECT 1 FROM sys.types WHERE name = 'UDT_MakeID')
-    CREATE TYPE dbo.UDT_MakeID FROM INT;
+    CREATE TYPE dbo.UDT_MakeID FROM SMALLINT;
 IF NOT EXISTS (SELECT 1 FROM sys.types WHERE name = 'UDT_MakeName')
     CREATE TYPE dbo.UDT_MakeName FROM NVARCHAR(100);
 IF NOT EXISTS (SELECT 1 FROM sys.types WHERE name = 'UDT_MakeCountry')
     CREATE TYPE dbo.UDT_MakeCountry FROM CHAR(3);
 IF NOT EXISTS (SELECT 1 FROM sys.types WHERE name = 'UDT_ModelID')
-    CREATE TYPE dbo.UDT_ModelID FROM INT;
+    CREATE TYPE dbo.UDT_ModelID FROM SMALLINT;
 IF NOT EXISTS (SELECT 1 FROM sys.types WHERE name = 'UDT_ModelName')
     CREATE TYPE dbo.UDT_ModelName FROM NVARCHAR(150);
 IF NOT EXISTS (SELECT 1 FROM sys.types WHERE name = 'UDT_ModelVariant')
@@ -72,7 +80,7 @@ IF NOT EXISTS (SELECT 1 FROM sys.types WHERE name = 'UDT_CustomerName')
 IF NOT EXISTS (SELECT 1 FROM sys.types WHERE name = 'UDT_Address')
     CREATE TYPE dbo.UDT_Address FROM NVARCHAR(50);
 IF NOT EXISTS (SELECT 1 FROM sys.types WHERE name = 'UDT_CountryRef')
-    CREATE TYPE dbo.UDT_CountryRef FROM INT;
+    CREATE TYPE dbo.UDT_CountryRef FROM SMALLINT;
 IF NOT EXISTS (SELECT 1 FROM sys.types WHERE name = 'UDT_IsReseller')
     CREATE TYPE dbo.UDT_IsReseller FROM BIT;
 IF NOT EXISTS (SELECT 1 FROM sys.types WHERE name = 'UDT_IsCreditRisk')
@@ -84,7 +92,7 @@ IF NOT EXISTS (SELECT 1 FROM sys.types WHERE name = 'UDT_StockCode')
 IF NOT EXISTS (SELECT 1 FROM sys.types WHERE name = 'UDT_ModelRef')
     CREATE TYPE dbo.UDT_ModelRef FROM SMALLINT;
 IF NOT EXISTS (SELECT 1 FROM sys.types WHERE name = 'UDT_ColorID')
-    CREATE TYPE dbo.UDT_ColorID FROM INT;
+    CREATE TYPE dbo.UDT_ColorID FROM SMALLINT;
 IF NOT EXISTS (SELECT 1 FROM sys.types WHERE name = 'UDT_Cost')
     CREATE TYPE dbo.UDT_Cost FROM MONEY;
 IF NOT EXISTS (SELECT 1 FROM sys.types WHERE name = 'UDT_RepairsCost')
@@ -124,7 +132,7 @@ GO
 
 ## 2. Define Tables (3NF Schema)
 
-Now define all tables in the PrestigeCars\_3NF database using the new normalized design. We include core Data tables, reference (lookup) tables, staging tables, and output tables. All tables use the appropriate UDTs and enforce primary keys, foreign keys, `NOT NULL` where applicable, and default constraints for data quality (e.g. default 0 for boolean flags).
+Now define all tables in the **PrestigeCars\_3NF** database using the new normalized design. We include core Data tables, reference (lookup) tables, staging tables, and output tables. All tables use the appropriate UDTs and enforce primary keys, foreign keys, `NOT NULL` where applicable, and default constraints for data quality (e.g. default 0 for boolean flags).
 
 ### Reference Schema Tables (Lookup Data)
 
@@ -257,11 +265,10 @@ CREATE TABLE Data.Make (
     MakeID       dbo.UDT_MakeID      IDENTITY(1,1) PRIMARY KEY,
     MakeName     dbo.UDT_MakeName    NOT NULL,
     -- Normalize country of origin into reference table
-    CountryID    dbo.UDT_CountryRef  NULL, 
+    CountryID    dbo.UDT_CountryRef  NULL,
     CONSTRAINT FK_Make_Country FOREIGN KEY (CountryID) REFERENCES Reference.Country(CountryID)
 );
 GO
--- The following Data.Model table definition is based on `data.model.sql`, contributed by Ashly.*
 
 -- Data.Model: car model, linked to its Make
 DROP TABLE IF EXISTS Data.Model;
@@ -296,7 +303,7 @@ GO
 DROP TABLE IF EXISTS Data.Stock;
 CREATE TABLE Data.Stock (
     StockCode        dbo.UDT_StockCode    NOT NULL PRIMARY KEY,  -- using StockCode as unique identifier for stock
-    ModelID          dbo.UDT_ModelRef     NOT NULL,
+    ModelID          dbo.UDT_ModelID      NOT NULL,
     Cost             dbo.UDT_Cost         NULL      DEFAULT(0),
     RepairsCost      dbo.UDT_RepairsCost  NULL      DEFAULT(0),
     PartsCost        dbo.UDT_PartsCost    NULL      DEFAULT(0),
@@ -468,15 +475,15 @@ CREATE TABLE Output.StockPrices (
 GO
 ```
 
-*All tables have now been created in the PrestigeCars\_3NF database with appropriate data types, keys, and constraints.*
+*All tables have now been created in the **PrestigeCars\_3NF** database with appropriate data types, keys, and constraints.*
 
 ## 3. Insert and Clean Data
 
-We will now **transfer all data** from the original **PrestigeCars** database into the new **PrestigeCars\_3NF** schema. Each insert uses a `SELECT` with built-in transformations to clean and normalize the data (trimming whitespace, converting case, replacing blanks with NULL or defaults, formatting codes, and looking up foreign keys). Comments indicate where each table's data cleaning logic is applied:
+We will now **transfer all data** from the original **PrestigeCars** database into the new **PrestigeCars\_3NF** schema. Each `INSERT ... SELECT` uses built-in transformations to clean and normalize the data (trimming whitespace, converting case, replacing blanks with `NULL` or default values, formatting codes, and looking up foreign keys). Comments indicate the data cleaning logic applied for each table:
 
 ```sql
 -- Insert Cleaning Logic for Reference.Country
--- Populate reference Country table from original Data.Country
+-- Populate Reference.Country from original Data.Country
 INSERT INTO Reference.Country (CountryName, CountryISO2, CountryISO3, SalesRegion, CountryFlag, FlagFileName, FlagFileType)
 SELECT 
     RTRIM(LTRIM(C.CountryName)),         -- trim country name
@@ -491,7 +498,7 @@ FROM PrestigeCars.Data.Country AS C;
 
 ```sql
 -- Insert Cleaning Logic for Reference.Color
--- Populate Color lookup from distinct Stock colors in original data
+-- Populate Reference.Color lookup from distinct Stock colors in original data
 INSERT INTO Reference.Color (Color)
 SELECT DISTINCT UPPER(RTRIM(LTRIM(S.Color)))  -- use upper-case color name for consistency
 FROM PrestigeCars.Data.Stock AS S
@@ -514,16 +521,12 @@ LEFT JOIN Reference.Country AS CR
 INSERT INTO Data.Model (MakeID, ModelName, ModelVariant, YearFirstProduced, YearLastProduced)
 SELECT 
     M2.MakeID,
-    RTRIM(LTRIM(Old.ModelName)), 
-    NULLIF(RTRIM(LTRIM(Old.ModelVariant)), ''),  -- trim variant, convert empty to NULL
+    RTRIM(LTRIM(Old.ModelName)),
+    NULLIF(RTRIM(LTRIM(Old.ModelVariant)), ''),  -- trim variant, blank to NULL
     NULLIF(RTRIM(LTRIM(Old.YearFirstProduced)), ''),  -- blank years to NULL
     NULLIF(RTRIM(LTRIM(Old.YearLastProduced)), '')
 FROM PrestigeCars.Data.Model AS Old
-JOIN Data.Make AS M2 
-    ON M2.MakeName = RTRIM(LTRIM(Old.MakeID)) OR M2.MakeID = Old.MakeID;
-    /* Note: Original Model.MakeID was a foreign key. 
-       We join by MakeID (if numeric match) or by name if needed 
-       to get the new MakeID (ensuring proper mapping after any identity reseed). */
+JOIN Data.Make AS M2 ON M2.MakeID = Old.MakeID;
 ```
 
 ```sql
@@ -535,7 +538,10 @@ SELECT
     RTRIM(LTRIM(C.Address1)),                           -- trim Address1
     NULLIF(RTRIM(LTRIM(C.Address2)), ''),               -- trim Address2, blank to NULL
     ISNULL(NULLIF(RTRIM(LTRIM(C.Town)), ''), 'Unknown'),-- trim Town, blank to 'Unknown'
-    UPPER(REPLACE(C.PostCode, ' ', '')),                -- remove spaces and upper-case PostCode
+    CASE 
+        WHEN C.PostCode IS NULL OR LTRIM(RTRIM(C.PostCode)) = '' THEN 'UNKNOWN'
+        ELSE UPPER(REPLACE(C.PostCode, ' ', ''))
+    END,    -- remove spaces, upper-case; use 'UNKNOWN' if blank/null
     CR.CountryID,                                       -- lookup CountryID by country code
     ISNULL(C.IsReseller, 0),                            -- default IsReseller to 0 if NULL
     ISNULL(C.IsCreditRisk, 0)                           -- default IsCreditRisk to 0 if NULL
@@ -548,8 +554,8 @@ LEFT JOIN Reference.Country AS CR
 -- Insert Cleaning Logic for Data.Stock
 INSERT INTO Data.Stock (StockCode, ModelID, Cost, RepairsCost, PartsCost, TransportInCost, IsRHD, ColorID, BuyerComments, DateBought, TimeBought)
 SELECT 
-    UPPER(RTRIM(LTRIM(S.StockCode))),   -- normalize StockCode to upper-case, trimmed
-    MD.ModelID,                         -- find new ModelID (mapping by ModelName and Make)
+    UPPER(RTRIM(LTRIM(S.StockCode))),   -- normalize StockCode to upper-case
+    MD.ModelID,                         -- new ModelID (foreign key mapping)
     ISNULL(S.Cost, 0),                  -- replace NULL costs with 0
     ISNULL(S.RepairsCost, 0),
     ISNULL(S.PartsCost, 0),
@@ -560,9 +566,7 @@ SELECT
     S.DateBought,
     S.TimeBought
 FROM PrestigeCars.Data.Stock AS S
-JOIN Data.Model AS MD 
-    ON MD.ModelID = S.ModelID OR (MD.ModelName = S.ModelName AND MD.ModelVariant = S.ModelVariant)
-    /* The join above assumes ModelID mapping; adjust if ModelName/Variant used from original data if needed. */
+JOIN Data.Model AS MD ON MD.ModelID = S.ModelID
 LEFT JOIN Reference.Color AS CO 
     ON UPPER(RTRIM(LTRIM(S.Color))) = CO.Color;
 ```
@@ -572,11 +576,12 @@ LEFT JOIN Reference.Color AS CO
 INSERT INTO Data.Sales (SalesID, CustomerID, InvoiceNumber, TotalSalePrice, SaleDate)
 SELECT 
     S.SalesID,
-    S.CustomerID,     -- CustomerIDs already cleaned/upper-cased in Customer insert
-    UPPER(S.InvoiceNumber),  -- ensure InvoiceNumber is upper-case (if alphanumeric)
+    S.CustomerID,                  -- CustomerIDs already cleaned in Data.Customer
+    UPPER(S.InvoiceNumber),        -- ensure InvoiceNumber is upper-case (if alphanumeric)
     ISNULL(S.TotalSalePrice, 0.00),
     S.SaleDate
-FROM PrestigeCars.Data.Sales AS S;
+FROM PrestigeCars.Data.Sales AS S
+WHERE S.CustomerID IN (SELECT CustomerID FROM Data.Customer);  -- only include sales with valid customer
 ```
 
 ```sql
@@ -588,7 +593,9 @@ SELECT
     UPPER(RTRIM(LTRIM(SD.StockID))),  -- ensure StockID matches upper-case StockCode in new Stock
     ISNULL(SD.SalePrice, 0.00),
     ISNULL(SD.LineItemDiscount, 0.00)
-FROM PrestigeCars.Data.SalesDetails AS SD;
+FROM PrestigeCars.Data.SalesDetails AS SD
+JOIN Data.Sales AS S ON SD.SalesID = S.SalesID
+JOIN Data.Stock AS ST ON UPPER(RTRIM(LTRIM(SD.StockID))) = ST.StockCode;  -- include only details with valid Sale and Stock
 ```
 
 ```sql
@@ -604,8 +611,7 @@ JOIN Reference.Color AS CO
 
 ```sql
 -- Insert Cleaning Logic for DataTransfer.Sales2015
-INSERT INTO DataTransfer.Sales2015 
-    (MakeName, ModelName, CustomerName, CountryName, Cost, RepairsCost, PartsCost, TransportInCost, SalePrice, SaleDate)
+INSERT INTO DataTransfer.Sales2015 (MakeName, ModelName, CustomerName, CountryName, Cost, RepairsCost, PartsCost, TransportInCost, SalePrice, SaleDate)
 SELECT 
     RTRIM(LTRIM(T.MakeName)),
     RTRIM(LTRIM(T.ModelName)),
@@ -622,8 +628,7 @@ FROM PrestigeCars.DataTransfer.Sales2015 AS T;
 
 ```sql
 -- Insert Cleaning Logic for DataTransfer.Sales2016
-INSERT INTO DataTransfer.Sales2016 
-    (MakeName, ModelName, CustomerName, CountryName, Cost, RepairsCost, PartsCost, TransportInCost, SalePrice, SaleDate)
+INSERT INTO DataTransfer.Sales2016 (MakeName, ModelName, CustomerName, CountryName, Cost, RepairsCost, PartsCost, TransportInCost, SalePrice, SaleDate)
 SELECT 
     RTRIM(LTRIM(T.MakeName)),
     RTRIM(LTRIM(T.ModelName)),
@@ -640,8 +645,7 @@ FROM PrestigeCars.DataTransfer.Sales2016 AS T;
 
 ```sql
 -- Insert Cleaning Logic for DataTransfer.Sales2017
-INSERT INTO DataTransfer.Sales2017 
-    (MakeName, ModelName, CustomerName, CountryName, Cost, RepairsCost, PartsCost, TransportInCost, SalePrice, SaleDate)
+INSERT INTO DataTransfer.Sales2017 (MakeName, ModelName, CustomerName, CountryName, Cost, RepairsCost, PartsCost, TransportInCost, SalePrice, SaleDate)
 SELECT 
     RTRIM(LTRIM(T.MakeName)),
     RTRIM(LTRIM(T.ModelName)),
@@ -658,8 +662,7 @@ FROM PrestigeCars.DataTransfer.Sales2017 AS T;
 
 ```sql
 -- Insert Cleaning Logic for DataTransfer.Sales2018
-INSERT INTO DataTransfer.Sales2018 
-    (MakeName, ModelName, CustomerName, CountryName, Cost, RepairsCost, PartsCost, TransportInCost, SalePrice, SaleDate)
+INSERT INTO DataTransfer.Sales2018 (MakeName, ModelName, CustomerName, CountryName, Cost, RepairsCost, PartsCost, TransportInCost, SalePrice, SaleDate)
 SELECT 
     RTRIM(LTRIM(T.MakeName)),
     RTRIM(LTRIM(T.ModelName)),
@@ -760,8 +763,8 @@ FROM PrestigeCars.SourceData.SalesText AS ST;
 ```
 
 ```sql
--- (Optional) Populate SourceData.SalesInPounds_Cleaned after conversion logic, if any
--- For now, leave SourceData.SalesInPounds_Cleaned empty or use separate ETL not shown here.
+-- (Optional) After conversion (not shown), SourceData.SalesInPounds_Cleaned could be populated
+-- For now, we leave SourceData.SalesInPounds_Cleaned empty or handle via separate ETL.
 ```
 
 ```sql
@@ -777,11 +780,11 @@ JOIN Data.Model AS MD ON ST.ModelID = MD.ModelID
 JOIN Data.Make  AS MK ON MD.MakeID = MK.MakeID;
 ```
 
-All data from the original **PrestigeCars** has now been loaded into **PrestigeCars\_3NF** with cleaning transformations applied. At this point, the new database contains fully **normalized tables** with consistent, cleaned data.
+All data from the original **PrestigeCars** database has now been loaded into **PrestigeCars\_3NF** with the above cleaning transformations applied. At this point, the new database contains fully **normalized tables** with consistent, cleaned data.
 
 ## 4. Create Utility Procedures (Truncate & Drop FKs)
 
-Next, add two utility stored procedures (contributed by Nayem) to facilitate data reload processes. These procedures will (a) drop all foreign key constraints in the star schema (e.g. if we were to have a star schema in a separate project stage), and (b) truncate all tables in the star schema. We create them in the **Project2.5** schema as specified:
+Next, we create two utility stored procedures to facilitate data reload processes in a future star schema stage. One procedure truncates all tables in the star schema (e.g., any tables in schemas like `Project3%`), and the other drops all foreign key constraints (removing dependencies before reload). Both procedures are created in the **Project2.5** schema:
 
 ```sql
 SET ANSI_NULLS ON;
@@ -789,11 +792,6 @@ GO
 SET QUOTED_IDENTIFIER ON;
 GO
 
--- =============================================
--- Author: Nayem Sarker
--- Create date: 5/14/2025
--- Description: Truncate Star Schema Data (all tables in schemas like 'Project3%')
--- =============================================
 DROP PROCEDURE IF EXISTS [Project2.5].[TruncateStarSchemaData];
 GO
 CREATE PROCEDURE [Project2.5].[TruncateStarSchemaData]
@@ -802,7 +800,7 @@ AS
 BEGIN
     SET NOCOUNT ON;
     DECLARE TableCursor CURSOR FOR
-        SELECT DISTINCT '[' + TABLE_SCHEMA + '].[' + TABLE_NAME + ']' as FullyQualifiedTableName
+        SELECT DISTINCT '[' + TABLE_SCHEMA + '].[' + TABLE_NAME + ']' AS FullyQualifiedTableName
         FROM INFORMATION_SCHEMA.TABLES
         WHERE TABLE_TYPE = 'BASE TABLE' AND TABLE_SCHEMA LIKE 'Project3%';  -- adjust schema filter as needed
 
@@ -821,7 +819,7 @@ BEGIN
     CLOSE TableCursor;
     DEALLOCATE TableCursor;
 
-    -- Log workflow step (requires Process.usp_TrackWorkFlow)
+    -- Log workflow step (calls tracking proc if exists)
     EXEC [Process].[usp_TrackWorkFlow]
          @WorkFlowStepDescription = 'Truncate Star Schema Data.',
          @UserAuthorizationKey = @UserAuthorizationKey,
@@ -829,11 +827,6 @@ BEGIN
 END;
 GO
 
--- =============================================
--- Author: Nayem Sarker
--- Create date: 5/14/2025
--- Description: Drop Foreign Keys from the Star Schema
--- =============================================
 DROP PROCEDURE IF EXISTS [Project2.5].[DropForeignKeysFromStarSchemaData];
 GO
 CREATE PROCEDURE [Project2.5].[DropForeignKeysFromStarSchemaData]
@@ -845,8 +838,8 @@ BEGIN
     DECLARE @TableName NVARCHAR(255);
     DECLARE @SQL NVARCHAR(MAX);
     DECLARE ForeignKeyCursor CURSOR FOR 
-        SELECT fk.name as ForeignKeyName,
-               QUOTENAME(OBJECT_SCHEMA_NAME(fk.parent_object_id)) + '.' + t.name as TableName
+        SELECT fk.name AS ForeignKeyName,
+               QUOTENAME(OBJECT_SCHEMA_NAME(fk.parent_object_id)) + '.' + t.name AS TableName
         FROM sys.foreign_keys AS fk
         INNER JOIN sys.tables AS t 
             ON fk.parent_object_id = t.object_id;
@@ -872,7 +865,7 @@ END;
 GO
 ```
 
-*Note:* The above procedures are designed to manage a future star schema (Project 3). The schema filter (`Project3%`) can be adjusted as needed. They also call `[Process].[usp_TrackWorkFlow]` to log actions; if this tracking procedure does not exist, you may create a stub in the Process schema to avoid any runtime errors. For example:
+*Note:* The above procedures are designed to help manage a future star schema (Project 3). The schema filter (`Project3%`) can be adjusted as needed. Both procedures call `[Process].[usp_TrackWorkFlow]` to log actions; if this tracking procedure does not exist in the database, you may create a stub in the **Process** schema to avoid runtime errors. For example:
 
 ```sql
 -- (Optional) Create a stub for Process.usp_TrackWorkFlow to satisfy procedure calls
@@ -883,7 +876,7 @@ CREATE PROCEDURE [Process].[usp_TrackWorkFlow]
     @WorkFlowStepTableRowCount INT
 AS
 BEGIN
-    -- Stub: In a real system, log or track workflow steps here
+    -- Stub implementation: in a real system, this would log the workflow step
     PRINT 'Workflow: ' + @WorkFlowStepDescription;
 END;
 GO
@@ -891,7 +884,7 @@ GO
 
 ## 5. Create Views and Functions
 
-Finally, create the **views** and **inline table-valued functions (ITVF)** as specified (contributed by William). These provide convenient read-only access to various parts of the data and demonstrate the use of the new normalized schema:
+Then, we create the **views** and **inline table-valued functions (ITVFs)** to facilitate data access. These provide convenient read-only access to various parts of the data and demonstrate the use of the new normalized schema:
 
 ```sql
 -- Views for reference and source tables (simple select aliases)
@@ -969,17 +962,17 @@ RETURN
 GO
 ```
 
-These views and functions allow easy querying of the data. For example, `fn_GetAllSales()` consolidates all yearly sales staging tables, and `fn_StockPricesByMake('Toyota')` would retrieve all stock costs for the make "Toyota".
+These views and functions allow easy querying of the data. For example, `fn_GetAllSales()` consolidates all yearly sales staging tables into one result, and calling `fn_StockPricesByMake('Toyota')` would retrieve all stock costs for the make "Toyota".
 
 ## 6. Validation and Verification
 
 Finally, we perform validation checks to ensure the migration was successful:
 
-* **Row Count Comparison:** Verify that each table in **PrestigeCars\_3NF** has the same number of records as the source **PrestigeCars** (no missing records).
-* **Foreign Key Integrity:** Ensure no broken references (e.g., all foreign keys in Sales have matching Customer, all StockIDs in SalesDetails exist in Stock, etc.).
-* **Sample Data Inspection:** Display joined sample records from multiple tables to confirm data relationships are intact and correctly normalized.
+* **Row Count Comparison:** Verify that each table in **PrestigeCars\_3NF** has the same number of records as the source **PrestigeCars** (no missing or extra records).
+* **Foreign Key Integrity:** Ensure no broken references (e.g. every foreign key value in Sales has a matching Customer, every StockID in SalesDetails exists in Stock, etc.).
+* **Sample Data Inspection:** Retrieve joined sample records from multiple tables to confirm that data relationships are intact and correctly normalized.
 
-**Row Counts: Original vs 3NF Tables**
+**Row Counts: Original vs. 3NF Tables**
 
 ```sql
 SELECT 
@@ -1094,46 +1087,46 @@ SELECT
 UNION ALL
 SELECT 
     'Output.StockPrices',
-    0,  -- (Output.StockPrices in original might be empty or not exist in PrestigeCars)
+    0,  -- (Output.StockPrices did not exist in original PrestigeCars)
     (SELECT COUNT(*) FROM PrestigeCars_3NF.Output.StockPrices);
 ```
 
-*Verify that the OriginalCount and NewCount are equal for each table above.* All counts should match, confirming no records were lost or duplicated during migration.
+*Verify that the OriginalCount and NewCount are equal for each table above.* All counts should match, confirming that no records were lost or duplicated during migration.
 
 **Foreign Key Integrity Checks**
 
-The following query checks that all foreign key relationships in the 3NF database are satisfied (expecting zero "missing" references in each case):
+The following query checks that all foreign key relationships in the 3NF database are satisfied (we expect zero "missing" references in each case):
 
 ```sql
-SELECT 
-    'Sales -> Customer FK broken (count)' AS [Check], 
+SELECT
+    'Sales -> Customer FK broken (count)' AS [Check],
     COUNT(*) AS MissingCount
-FROM Data.Sales AS s 
+FROM Data.Sales AS s
 LEFT JOIN Data.Customer AS c ON s.CustomerID = c.CustomerID
 WHERE c.CustomerID IS NULL
 
 UNION ALL
 
-SELECT 
-    'SalesDetails -> Sales FK broken (count)', 
+SELECT
+    'SalesDetails -> Sales FK broken (count)',
     COUNT(*)
-FROM Data.SalesDetails AS sd 
+FROM Data.SalesDetails AS sd
 LEFT JOIN Data.Sales AS s ON sd.SalesID = s.SalesID
 WHERE s.SalesID IS NULL
 
 UNION ALL
 
-SELECT 
-    'SalesDetails -> Stock FK broken (count)', 
+SELECT
+    'SalesDetails -> Stock FK broken (count)',
     COUNT(*)
-FROM Data.SalesDetails AS sd 
+FROM Data.SalesDetails AS sd
 LEFT JOIN Data.Stock AS st ON sd.StockID = st.StockCode
 WHERE st.StockCode IS NULL
 
 UNION ALL
 
-SELECT 
-    'Stock -> Model FK broken (count)', 
+SELECT
+    'Stock -> Model FK broken (count)',
     COUNT(*)
 FROM Data.Stock AS st
 LEFT JOIN Data.Model AS m ON st.ModelID = m.ModelID
@@ -1141,8 +1134,8 @@ WHERE m.ModelID IS NULL
 
 UNION ALL
 
-SELECT 
-    'Model -> Make FK broken (count)', 
+SELECT
+    'Model -> Make FK broken (count)',
     COUNT(*)
 FROM Data.Model AS md
 LEFT JOIN Data.Make AS mk ON md.MakeID = mk.MakeID
@@ -1150,19 +1143,19 @@ WHERE mk.MakeID IS NULL
 
 UNION ALL
 
-SELECT 
-    'Customer -> Country FK broken (count)', 
+SELECT
+    'Customer -> Country FK broken (count)',
     COUNT(*)
 FROM Data.Customer AS cs
 LEFT JOIN Reference.Country AS co ON cs.CountryID = co.CountryID
 WHERE co.CountryID IS NULL;
 ```
 
-Each of the above counts should return **0**, indicating all foreign key references in the new database have matching parent records (no referential integrity issues).
+Each of the above counts should return **0**, indicating that all foreign key references in the new database have matching parent records (no referential integrity issues).
 
 **Sample Joined Records (Data Consistency Check)**
 
-To further validate, retrieve a few sample records with joins across multiple tables. The query below joins **SalesDetails** with **Sales**, **Stock**, **Model**, **Make**, **Customer**, **Country**, and **Color** to reconstruct a comprehensive view of a sale. This confirms that the normalization (e.g., using CountryID and ColorID foreign keys) retains correct information:
+To further validate the data, we can retrieve a few sample records with joins across multiple tables. The query below joins **SalesDetails** with **Sales**, **Stock**, **Model**, **Make**, **Customer**, **Country**, and **Color** to reconstruct a comprehensive view of a sale. This confirms that the normalization (e.g. using numeric `CountryID` and `ColorID` foreign keys instead of names) still retains all the correct information:
 
 ```sql
 SELECT TOP 10
@@ -1190,8 +1183,8 @@ JOIN Reference.Country AS co ON cs.CountryID = co.CountryID
 JOIN Reference.Color   AS clr ON st.ColorID = clr.ColorID;
 ```
 
-The output should show each sample sale line item with all details correctly linked (e.g., a **CustomerName** with their **CountryName**, the **Make/Model** of the sold vehicle, the vehicle **Color**, costs, sale price, etc.). This verifies that the foreign keys (Customer -> Country, Stock -> Color, etc.) point to the correct reference data.
+The output should show each sample sale line-item with all details correctly linked (e.g. a **CustomerName** together with their **CountryName**, the **Make** and **Model** of the vehicle sold, the vehicle **Color**, various cost fields, sale price, etc.). This verifies that the foreign keys (Customer -> Country, Stock -> Color, etc.) point to the correct reference data and that no data was lost or mis-assigned during normalization.
 
 ---
 
-**Conclusion:** The **PrestigeCars\_3NF** database has been successfully created and populated. All tables are in **Third Normal Form**, data is cleansed and standardized, and integrity checks show no broken dependencies or missing records. This completes the migration and normalization process, providing a clean foundation for future use (including further star-schema transformations in Project 3, if any). The notebook's steps can be executed top-to-bottom in Azure Data Studio or Jupyter (SQL kernel) to recreate the entire database.
+**Conclusion:** We have successfully created and populated the **PrestigeCars\_3NF** database. All tables are in **Third Normal Form** with cleansed, standardized data, and our integrity checks confirm no broken dependencies or missing records. This completes the migration and normalization process, providing a clean foundation for future use (including potential star-schema transformations in Project 3, if any). These steps can be executed sequentially in Azure Data Studio or in a Jupyter SQL notebook to recreate the entire database.
