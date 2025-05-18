@@ -1,6 +1,8 @@
 USE PrestigeCars_3NF
 GO
 
+-- Credits: William
+
 -- Views
 -- Combines all yearly sales into one
 CREATE OR ALTER VIEW vw_AllSales AS
