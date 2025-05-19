@@ -847,7 +847,7 @@ All data from the original **PrestigeCars** database has now been loaded into **
 
 ## 4. Create Utility Procedures (Truncate & Drop FKs)
 
-Next, we create two **utility stored procedures** to facilitate data reload processes in a future star schema stage (project phase 3). One procedure truncates all tables in a target schema (e.g., any tables in schemas like `Project3%`), and the other drops all foreign key constraints (removing dependencies before a reload). Both procedures are created in the **Project2.5** schema:
+Next, we create two **utility stored procedures** to facilitate data reload processes in a future star schema stage (project phase 4). One procedure truncates all tables in a target schema (e.g., any tables in schemas like `Project2.5%`), and the other drops all foreign key constraints (removing dependencies before a reload). Both procedures are created in the **Project2.5** schema:
 
 USE PrestigeCars_3NF
 GO
