@@ -954,7 +954,7 @@ BEGIN
 END;
 GO
 
-*Note:* The above procedures are designed to help manage a future star schema (Project 3) reload process. The schema filter (`Project3%`) can be adjusted as needed. Both procedures call `[Process].[usp_TrackWorkFlow]` to log actions; if this tracking procedure does not exist in the database, we create a stub in the **Process** schema to avoid runtime errors. For example:
+*Note:* The above procedures are designed to help manage a future star schema (Project 2.5) reload process. The schema filter (`Project2.5%`) can be adjusted as needed. Both procedures call `[Process].[usp_TrackWorkFlow]` to log actions; if this tracking procedure does not exist in the database, we create a stub in the **Process** schema to avoid runtime errors. For example:
 
 ```sql
 -- (Optional) Create a stub for Process.usp_TrackWorkFlow to satisfy procedure calls
