@@ -998,6 +998,7 @@ GO
 With those redundant tables removed, we proceed to define the views. Each view is a simple SELECT that mirrors the data from certain reference or source tables, making it easier to query them (especially if those tables were dropped or if we want to restrict direct table access):
 
 ```sql
+-- Author: William Wang
 -- Views for reference and source tables (providing simplified access or placeholders)
 CREATE VIEW vw_SalesCategory AS
 SELECT LowerThreshold, UpperThreshold, CategoryDescription
@@ -1085,6 +1086,13 @@ This ensures that any future queries referencing these names will use the new vi
 - `Reference.Staff`
 - `Reference.StaffHierarchy`
 - `Reference.YearlySales`
+- `Data.Country`
+
+
+> **Why are we removing `Data.Country`?**
+>
+> `Data.Country` was only used as a temporary staging table during the normalization process. All cleaned, validated country data has now been migrated to `Reference.Country`, which serves as the authoritative lookup table for the final normalized schema. Keeping `Data.Country` would create unnecessary redundancy and confusion, so it is dropped as part of the final cleanup.
+
 
 ---
 
@@ -1093,11 +1101,46 @@ This ensures that any future queries referencing these names will use the new vi
 ```sql
 -- Final cleanup: Drop reference tables that have been replaced by views
 
+USE PrestigeCars_3NF
+GO
+
+-- ============================================================
+-- Authors: ASHLY FELIX, Mehtab
+-- Final Cleanup: Drop reference tables replaced by views, staging tables, and obsolete columns
+-- ============================================================
+
+-- Drop reference tables that have been replaced by views
 DROP TABLE IF EXISTS Reference.SalesCategory;
 DROP TABLE IF EXISTS Reference.Staff;
 DROP TABLE IF EXISTS Reference.StaffHierarchy;
 DROP TABLE IF EXISTS Reference.YearlySales;
+DROP TABLE IF EXISTS Reference.SalesBudgets; -- Only if fully replaced and unused
 GO
+
+-- Drop staging/flat table no longer needed in normalized schema
+DROP TABLE IF EXISTS Data.Country;
+GO
+
+-- Remove default constraints and drop obsolete columns from Reference.Country
+-- Only if these columns are no longer needed anywhere
+
+-- Find and drop default constraints for columns to be removed
+DECLARE @sql NVARCHAR(MAX) = N'';
+
+SELECT @sql = @sql + 'ALTER TABLE Reference.Country DROP CONSTRAINT [' + dc.name + '];' + CHAR(13)
+FROM sys.default_constraints dc
+JOIN sys.columns c ON dc.parent_object_id = c.object_id AND dc.parent_column_id = c.column_id
+JOIN sys.tables t ON t.object_id = c.object_id
+WHERE t.name = 'Country' AND t.schema_id = SCHEMA_ID('Reference')
+  AND c.name IN ('FlagFileName', 'FlagFileType', 'CountryFlag');
+
+EXEC sp_executesql @sql;
+
+-- Now drop the columns themselves
+ALTER TABLE Reference.Country
+DROP COLUMN CountryFlag, FlagFileName, FlagFileType;
+GO
+
 ```
 
 
