@@ -1,11 +1,11 @@
 # PrestigeCars\_3NF Migration Notebook
 Created by: Mehtab Mahir
-* **Mehtab (Leader):** Integrated all group work, coordinated workflow, implemented and refined most SQL scripts, made sure all parts functioned together, and provided troubleshooting/support for all technical tasks.
-* **Ashly (Co-Leader):** Helped organize and distribute work, contributed to schema design, finalized presentation slides, and supported team communications.
-* **Maitri:** Assisted with the initial project structure, helped with schema planning, and contributed to the group presentation.
+* **Mehtab (Leader):** Integrated all group work, coordinated workflow, implemented and refined most SQL scripts, made sure all parts functioned together, created the documentation and provided troubleshooting/support for all technical tasks.
+* **Ashly (Co-Leader):** Helped organize and distribute work, contributed to schema design, finalized presentation slides, Cardinality and supported team communications. 
+* **Maitri:** Assisted with the initial project structure, helped with schema planning, handled RedGate Docs and contributed to the group presentation. 
 * **Nayem:** Wrote and improved utility stored procedures (truncate/drop FKs) and helped with data migration tasks.
 * **William:** Developed views, inline table-valued functions, and assisted with data validation.
-* **Sabrina:** Helped with the group presentation and provided team support.
+* **Sabrina:** Helped with the group presentation and provided overall team support.
 
 ---
 
