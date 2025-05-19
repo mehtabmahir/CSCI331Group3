@@ -18,6 +18,7 @@ We create the new **PrestigeCars\_3NF** database from the existing **PrestigeCar
 First, we ensure a clean environment by dropping any existing **PrestigeCars\_3NF** database, then create the new database and define the required schemas. We then execute the full user-defined type (UDT) creation script to enforce consistent data types across the schema (including new types for country flag and related fields):
 
 ```sql
+-- Author: Mehtab Mahir
 -- Drop existing PrestigeCars_3NF database if it exists (start fresh)
 IF DB_ID('PrestigeCars_3NF') IS NOT NULL
 BEGIN
@@ -153,6 +154,7 @@ Now we define all tables in the **PrestigeCars\_3NF** database using the new nor
 ### Reference Schema Tables (Lookup Data)
 
 ```sql
+-- Author: Ashly, Modified by Mehtab
 -- Reference.Country: list of countries (normalized from original Data.Country & Data.Make)
 DROP TABLE IF EXISTS Reference.Country;
 CREATE TABLE Reference.Country (
@@ -267,6 +269,7 @@ GO
 This includes the primary business tables and one new **Data.Country** table to store country details (including flags) in the core data schema. The **Data.Country** table mirrors the structure of **Reference.Country**, using the same UDT-defined columns for flags with NOT NULL and default constraints.
 
 ```sql
+-- Author: Ashly, Modified by Mehtab
 -- Data.Make: car manufacturers, with reference to country of origin
 DROP TABLE IF EXISTS Data.Make;
 CREATE TABLE Data.Make (
@@ -506,6 +509,7 @@ GO
 We will now **transfer all data** from the original **PrestigeCars** database into the new **PrestigeCars\_3NF** schema. Each `INSERT ... SELECT` uses built-in functions (e.g. `RTRIM/LTRIM`, `ISNULL`) to trim whitespace and replace missing values with defaults. This ensures that the new tables are populated with **cleaned, normalized data**:
 
 ```sql
+-- Author: Mehtab Mahir
 -- Insert Cleaning Logic for Reference.Country
 -- Populate Reference.Country from original Data.Country (including flags)
 INSERT INTO Reference.Country (
@@ -849,6 +853,8 @@ All data from the original **PrestigeCars** database has now been loaded into **
 
 Next, we create two **utility stored procedures** to facilitate data reload processes in a future star schema stage (project phase 4). One procedure truncates all tables in a target schema (e.g., any tables in schemas like `Project2.5%`), and the other drops all foreign key constraints (removing dependencies before a reload). Both procedures are created in the **Project2.5** schema:
 
+
+```sql
 USE PrestigeCars_3NF
 GO
 
@@ -953,10 +959,12 @@ BEGIN
          @WorkFlowStepTableRowCount = -1;
 END;
 GO
+```
 
 *Note:* The above procedures are designed to help manage a future star schema (Project 2.5) reload process. The schema filter (`Project2.5%`) can be adjusted as needed. Both procedures call `[Process].[usp_TrackWorkFlow]` to log actions; if this tracking procedure does not exist in the database, we create a stub in the **Process** schema to avoid runtime errors. For example:
 
 ```sql
+-- Author: Mehtab Mahir, Ashly Felix
 -- (Optional) Create a stub for Process.usp_TrackWorkFlow to satisfy procedure calls
 DROP PROCEDURE IF EXISTS [Process].[usp_TrackWorkFlow];
 CREATE PROCEDURE [Process].[usp_TrackWorkFlow]
