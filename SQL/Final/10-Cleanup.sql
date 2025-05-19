@@ -1,71 +1,39 @@
 USE PrestigeCars_3NF
 GO
 
--- Final cleanup: Drop reference tables that have been replaced by views
+-- ============================================================
+-- Authors: ASHLY FELIX, Mehtab
+-- Final Cleanup: Drop reference tables replaced by views, staging tables, and obsolete columns
+-- ============================================================
 
+-- Drop reference tables that have been replaced by views
 DROP TABLE IF EXISTS Reference.SalesCategory;
 DROP TABLE IF EXISTS Reference.Staff;
 DROP TABLE IF EXISTS Reference.StaffHierarchy;
 DROP TABLE IF EXISTS Reference.YearlySales;
-DROP TABLE IF EXISTS Reference.SalesBudgets
+DROP TABLE IF EXISTS Reference.SalesBudgets; -- Only if fully replaced and unused
 GO
 
--- We should keep DataTransfer and SourceData tables for future refernence and backup
+-- Drop staging/flat table no longer needed in normalized schema
+DROP TABLE IF EXISTS Data.Country;
+GO
 
---AUTHOR: ASHLY FELIX 
+-- Remove default constraints and drop obsolete columns from Reference.Country
+-- Only if these columns are no longer needed anywhere
 
---Drop EMPTY COLUMNS
---FIND CONSTRAINS: 
-SELECT 
-    t.name AS TableName,
-    c.name AS ColumnName,
-    dc.name AS ConstraintName
-FROM 
-    sys.default_constraints dc
-JOIN 
-    sys.columns c ON dc.parent_object_id = c.object_id AND dc.parent_column_id = c.column_id
-JOIN 
-    sys.tables t ON t.object_id = c.object_id
-WHERE 
-    t.name = 'Country' AND c.name IN ('FlagFileName', 'FlagFileType', 'CountryFlag');
+-- Find and drop default constraints for columns to be removed
+DECLARE @sql NVARCHAR(MAX) = N'';
 
---DROP CONSTRAINS: 
--- Drop all default constraints first
-ALTER TABLE Data.Country DROP CONSTRAINT DF__Country__Country__19DFD96B;
-ALTER TABLE Data.Country DROP CONSTRAINT DF__Country__FlagFil__1AD3FDA4;
-ALTER TABLE Data.Country DROP CONSTRAINT DF__Country__FlagFil__1BC821DD;
-ALTER TABLE Data.Country DROP CONSTRAINT DF__Country__Country__286302EC;
-ALTER TABLE Data.Country DROP CONSTRAINT DF__Country__FlagFil__29572725;
-ALTER TABLE Data.Country DROP CONSTRAINT DF__Country__FlagFil__2A4B4B5E;
-
-
-
---drop constrians
--- Drop default constraint on CountryFlag
-SELECT 
-    t.name AS TableName,
-    c.name AS ColumnName,
-    dc.name AS DefaultConstraintName
+SELECT @sql = @sql + 'ALTER TABLE Reference.Country DROP CONSTRAINT [' + dc.name + '];' + CHAR(13)
 FROM sys.default_constraints dc
 JOIN sys.columns c ON dc.parent_object_id = c.object_id AND dc.parent_column_id = c.column_id
-JOIN sys.tables t ON c.object_id = t.object_id
-WHERE t.name = 'Country';
+JOIN sys.tables t ON t.object_id = c.object_id
+WHERE t.name = 'Country' AND t.schema_id = SCHEMA_ID('Reference')
+  AND c.name IN ('FlagFileName', 'FlagFileType', 'CountryFlag');
 
---
--- Drop constraints
-ALTER TABLE Reference.Country DROP CONSTRAINT DF__Country__Country__286302EC;
-ALTER TABLE Reference.Country DROP CONSTRAINT DF__Country__FlagFil__29572725;
-ALTER TABLE Reference.Country DROP CONSTRAINT DF__Country__FlagFil__2A4B4B5E;
+EXEC sp_executesql @sql;
 
--- Drop columns
+-- Now drop the columns themselves
 ALTER TABLE Reference.Country
-DROP COLUMN CountryFlag,
-             FlagFileName,
-             FlagFileType;
-
--- Drop the columns after constraints are removed
-ALTER TABLE Reference.Country
-DROP COLUMN CountryFlag,
-             FlagFileName,
-             FlagFileType;
-
+DROP COLUMN CountryFlag, FlagFileName, FlagFileType;
+GO
