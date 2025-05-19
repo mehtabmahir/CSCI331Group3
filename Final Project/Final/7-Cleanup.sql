@@ -37,3 +37,11 @@ EXEC sp_executesql @sql;
 ALTER TABLE Reference.Country
 DROP COLUMN CountryFlag, FlagFileName, FlagFileType;
 GO
+
+-- Final Cleanup: Drop DataTransfer staging tables that are no longer needed
+
+DROP TABLE IF EXISTS DataTransfer.Sales2015;
+DROP TABLE IF EXISTS DataTransfer.Sales2016;
+DROP TABLE IF EXISTS DataTransfer.Sales2017;
+DROP TABLE IF EXISTS DataTransfer.Sales2018;
+GO

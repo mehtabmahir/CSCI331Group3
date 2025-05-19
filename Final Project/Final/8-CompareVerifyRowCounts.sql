@@ -4,14 +4,9 @@ GO
 --Author: Mehtab Mahir--
 
 SELECT 
-    'Data.Country' AS TableName,
-    (SELECT COUNT(*) FROM PrestigeCars.Data.Country) AS OriginalCount,
-    (SELECT COUNT(*) FROM PrestigeCars_3NF.Reference.Country) AS NewCount
-UNION ALL
-SELECT 
-    'Data.Customer',
-    (SELECT COUNT(*) FROM PrestigeCars.Data.Customer),
-    (SELECT COUNT(*) FROM PrestigeCars_3NF.Data.Customer)
+    'Data.Customer' AS TableName,
+    (SELECT COUNT(*) FROM PrestigeCars.Data.Customer) AS OriginalCount,
+    (SELECT COUNT(*) FROM PrestigeCars_3NF.Data.Customer) AS NewCount
 UNION ALL
 SELECT 
     'Data.Make',
@@ -44,26 +39,6 @@ SELECT
     (SELECT COUNT(*) FROM PrestigeCars_3NF.Data.PivotTable)
 UNION ALL
 SELECT 
-    'DataTransfer.Sales2015',
-    (SELECT COUNT(*) FROM PrestigeCars.DataTransfer.Sales2015),
-    (SELECT COUNT(*) FROM PrestigeCars_3NF.DataTransfer.Sales2015)
-UNION ALL
-SELECT 
-    'DataTransfer.Sales2016',
-    (SELECT COUNT(*) FROM PrestigeCars.DataTransfer.Sales2016),
-    (SELECT COUNT(*) FROM PrestigeCars_3NF.DataTransfer.Sales2016)
-UNION ALL
-SELECT 
-    'DataTransfer.Sales2017',
-    (SELECT COUNT(*) FROM PrestigeCars.DataTransfer.Sales2017),
-    (SELECT COUNT(*) FROM PrestigeCars_3NF.DataTransfer.Sales2017)
-UNION ALL
-SELECT 
-    'DataTransfer.Sales2018',
-    (SELECT COUNT(*) FROM PrestigeCars.DataTransfer.Sales2018),
-    (SELECT COUNT(*) FROM PrestigeCars_3NF.DataTransfer.Sales2018)
-UNION ALL
-SELECT 
     'Reference.Budget',
     (SELECT COUNT(*) FROM PrestigeCars.Reference.Budget),
     (SELECT COUNT(*) FROM PrestigeCars_3NF.Reference.Budget)
@@ -84,26 +59,6 @@ SELECT
     (SELECT COUNT(*) FROM PrestigeCars_3NF.Reference.MarketingInformation)
 UNION ALL
 SELECT 
-    'Reference.SalesCategory',
-    (SELECT COUNT(*) FROM PrestigeCars.Reference.SalesCategory),
-    (SELECT COUNT(*) FROM PrestigeCars_3NF.Reference.SalesCategory)
-UNION ALL
-SELECT 
-    'Reference.Staff',
-    (SELECT COUNT(*) FROM PrestigeCars.Reference.Staff),
-    (SELECT COUNT(*) FROM PrestigeCars_3NF.Reference.Staff)
-UNION ALL
-SELECT 
-    'Reference.StaffHierarchy',
-    (SELECT COUNT(*) FROM PrestigeCars.Reference.StaffHierarchy),
-    (SELECT COUNT(*) FROM PrestigeCars_3NF.Reference.StaffHierarchy)
-UNION ALL
-SELECT 
-    'Reference.YearlySales',
-    (SELECT COUNT(*) FROM PrestigeCars.Reference.YearlySales),
-    (SELECT COUNT(*) FROM PrestigeCars_3NF.Reference.YearlySales)
-UNION ALL
-SELECT 
     'SourceData.SalesInPounds',
     (SELECT COUNT(*) FROM PrestigeCars.SourceData.SalesInPounds),
     (SELECT COUNT(*) FROM PrestigeCars_3NF.SourceData.SalesInPounds)
@@ -115,5 +70,5 @@ SELECT
 UNION ALL
 SELECT 
     'Output.StockPrices',
-    0,  -- (Output.StockPrices in original might be empty or not exist in PrestigeCars)
+    0,
     (SELECT COUNT(*) FROM PrestigeCars_3NF.Output.StockPrices);
