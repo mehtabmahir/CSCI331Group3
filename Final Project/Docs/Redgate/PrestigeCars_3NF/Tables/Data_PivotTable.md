@@ -8,11 +8,6 @@
 
 ## <a name="#properties"></a>Properties
 
-| Property | Value |
-|---|---|
-| Row Count (~) | 10 |
-| Created | 5:33:40 pm Sunday, 18 May 2025 |
-| Last Modified | 5:33:40 pm Sunday, 18 May 2025 |
 
 
 ---
@@ -84,5 +79,5 @@ GO
 
 ###### Copyright 2025 - All Rights Reserved
 
-###### Created: Sunday, 18 May 2025 6:12:50 pm
+###### Created: Sunday, 18 May 2025 10:09:04 pm
 
