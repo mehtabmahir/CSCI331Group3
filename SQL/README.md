@@ -849,7 +849,9 @@ All data from the original **PrestigeCars** database has now been loaded into **
 
 Next, we create two **utility stored procedures** to facilitate data reload processes in a future star schema stage (project phase 3). One procedure truncates all tables in a target schema (e.g., any tables in schemas like `Project3%`), and the other drops all foreign key constraints (removing dependencies before a reload). Both procedures are created in the **Project2.5** schema:
 
-```sql
+USE PrestigeCars_3NF
+GO
+
 SET ANSI_NULLS ON;
 GO
 SET QUOTED_IDENTIFIER ON;
@@ -857,37 +859,44 @@ GO
 
 -- =============================================
 -- Author: Nayem Sarker
--- Create date: 5/14/2025
--- Description: Truncate all tables in schemas matching 'Project3%'
+-- Purpose: Truncate all tables in key schemas after dropping FKs
 -- =============================================
+
+-- Drop the Truncate Procedure if it exists
 DROP PROCEDURE IF EXISTS [Project2.5].[TruncateStarSchemaData];
 GO
+
+-- Recreate Truncate Procedure
 CREATE PROCEDURE [Project2.5].[TruncateStarSchemaData]
     @UserAuthorizationKey INT
 AS
 BEGIN
     SET NOCOUNT ON;
+
     DECLARE TableCursor CURSOR FOR
         SELECT DISTINCT '[' + TABLE_SCHEMA + '].[' + TABLE_NAME + ']' AS FullyQualifiedTableName
         FROM INFORMATION_SCHEMA.TABLES
-        WHERE TABLE_TYPE = 'BASE TABLE' AND TABLE_SCHEMA LIKE 'Project3%';  -- adjust schema filter as needed
+        WHERE TABLE_TYPE = 'BASE TABLE'
+          AND TABLE_SCHEMA IN ('Data', 'Reference', 'DataTransfer', 'SourceData', 'Output'); -- updated schema list
 
     OPEN TableCursor;
+
     DECLARE @TableName NVARCHAR(255);
     DECLARE @SQL NVARCHAR(MAX);
 
     FETCH NEXT FROM TableCursor INTO @TableName;
+
     WHILE @@FETCH_STATUS = 0
     BEGIN
         SET @SQL = 'TRUNCATE TABLE ' + @TableName;
         EXEC(@SQL);
+
         FETCH NEXT FROM TableCursor INTO @TableName;
     END
 
     CLOSE TableCursor;
     DEALLOCATE TableCursor;
 
-    -- Log workflow step (calls tracking proc if exists)
     EXEC [Process].[usp_TrackWorkFlow]
          @WorkFlowStepDescription = 'Truncate Star Schema Data.',
          @UserAuthorizationKey = @UserAuthorizationKey,
@@ -895,48 +904,55 @@ BEGIN
 END;
 GO
 
+
 -- =============================================
 -- Author: Nayem Sarker
--- Create date: 5/14/2025
--- Description: Drop all foreign keys from the database (for reload)
+-- Purpose: Drop all foreign keys in the 3NF database
 -- =============================================
+
+-- Drop the Drop-FKs Procedure if it exists
 DROP PROCEDURE IF EXISTS [Project2.5].[DropForeignKeysFromStarSchemaData];
 GO
+
+-- Recreate Drop-FKs Procedure
 CREATE PROCEDURE [Project2.5].[DropForeignKeysFromStarSchemaData]
     @UserAuthorizationKey INT
 AS
 BEGIN
     SET NOCOUNT ON;
+
     DECLARE @ForeignKeyName VARCHAR(255);
     DECLARE @TableName NVARCHAR(255);
     DECLARE @SQL NVARCHAR(MAX);
+
     DECLARE ForeignKeyCursor CURSOR FOR 
         SELECT fk.name AS ForeignKeyName,
-               QUOTENAME(OBJECT_SCHEMA_NAME(fk.parent_object_id)) + '.' + t.name AS TableName
+               QUOTENAME(OBJECT_SCHEMA_NAME(fk.parent_object_id)) + '.' + QUOTENAME(OBJECT_NAME(fk.parent_object_id)) AS TableName
         FROM sys.foreign_keys AS fk
         INNER JOIN sys.tables AS t 
-            ON fk.parent_object_id = t.object_id;
+            ON fk.parent_object_id = t.object_id
+        WHERE OBJECT_SCHEMA_NAME(fk.parent_object_id) IN ('Data', 'Reference', 'DataTransfer', 'SourceData', 'Output');  -- match same schema filter
 
     OPEN ForeignKeyCursor;
     FETCH NEXT FROM ForeignKeyCursor INTO @ForeignKeyName, @TableName;
+
     WHILE @@FETCH_STATUS = 0 
     BEGIN
         SET @SQL = 'ALTER TABLE ' + @TableName + ' DROP CONSTRAINT ' + QUOTENAME(@ForeignKeyName) + ';';
         EXEC(@SQL);
+
         FETCH NEXT FROM ForeignKeyCursor INTO @ForeignKeyName, @TableName;
     END
 
     CLOSE ForeignKeyCursor;
     DEALLOCATE ForeignKeyCursor;
 
-    -- Log workflow step
     EXEC [Process].[usp_TrackWorkFlow]
          @WorkFlowStepDescription = 'Drop Foreign Keys.',
          @UserAuthorizationKey = @UserAuthorizationKey,
          @WorkFlowStepTableRowCount = -1;
 END;
 GO
-```
 
 *Note:* The above procedures are designed to help manage a future star schema (Project 3) reload process. The schema filter (`Project3%`) can be adjusted as needed. Both procedures call `[Process].[usp_TrackWorkFlow]` to log actions; if this tracking procedure does not exist in the database, we create a stub in the **Process** schema to avoid runtime errors. For example:
 
