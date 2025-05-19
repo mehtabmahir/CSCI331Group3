@@ -1,5 +1,5 @@
 # PrestigeCars\_3NF Migration Notebook
-
+Created by: Mehtab Mahir
 * **Mehtab (Leader):** Integrated all group work, coordinated workflow, implemented and refined most SQL scripts, made sure all parts functioned together, and provided troubleshooting/support for all technical tasks.
 * **Ashly (Co-Leader):** Helped organize and distribute work, contributed to schema design, finalized presentation slides, and supported team communications.
 * **Maitri:** Assisted with the initial project structure, helped with schema planning, and contributed to the group presentation.
@@ -1042,6 +1042,41 @@ GO
 
 The views `vw_*` above serve as read-only **aliases** to the underlying tables (in a real scenario, after dropping the physical reference tables, these views could be adjusted to derive the same information from the normalized tables if needed). The functions `fn_GetAllSales` and `fn_StockPricesByMake` demonstrate how to use the staging and output tables: the first aggregates multiple yearly sales tables into one result set with an extra column indicating the year, and the second filters the stock prices output by a given manufacturer.
 
+### Drop Redundant Reference Tables Replaced by Views
+
+At this stage, we have migrated all data, validated our schema, and created views that fully replace certain reference tables.  
+**To maintain clarity and avoid confusion**, we now drop these redundant tables.  
+This ensures that any future queries referencing these names will use the new views, not obsolete physical tables.
+
+#### **Reasoning**
+
+- These tables are *no longer needed as base tables*—their data and relationships are now handled by normalized tables and/or summarized by views.
+- Keeping both a table and a view with the same name can cause ambiguity and errors.
+- Other reference tables (e.g., `Reference.Color`, `Reference.Country`, etc.) **should NOT be dropped** because they serve as active lookup tables in the normalized schema.
+
+---
+
+#### **Tables Being Dropped:**
+- `Reference.SalesCategory`
+- `Reference.Staff`
+- `Reference.StaffHierarchy`
+- `Reference.YearlySales`
+
+---
+
+**SQL:**
+
+```sql
+-- Final cleanup: Drop reference tables that have been replaced by views
+
+DROP TABLE IF EXISTS Reference.SalesCategory;
+DROP TABLE IF EXISTS Reference.Staff;
+DROP TABLE IF EXISTS Reference.StaffHierarchy;
+DROP TABLE IF EXISTS Reference.YearlySales;
+GO
+```
+
+
 ## 6. Validation and Verification
 
 Finally, we perform several validation checks to ensure the migration was successful and the new schema maintains data integrity:
@@ -1268,3 +1303,5 @@ The output of the above query shows joined data such as a customer's country nam
 * No data is missing or mismatched after normalization (e.g., the `CustomerCountry` in each row matches the customer's country in the original database for that sale).
 
 With all row counts verified, foreign keys intact, and sample data matching on joins, the **PrestigeCars\_3NF** migration and normalization process is confirmed to be successful. The database is now in Third Normal Form, and it is ready for further use or to serve as a source for building a star schema in the next phase of the project.
+
+
